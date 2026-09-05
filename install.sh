@@ -41,8 +41,53 @@ backup() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# brew_install <formula-or-cask> [--cask] — install via Homebrew if brew exists.
+brew_install() {
+  local pkg="$1" cask="${2:-}"
+  if ! have brew; then warn "Homebrew not found — install it first: https://brew.sh" >/dev/tty; return 1; fi
+  if [ "$cask" = "--cask" ]; then brew install --cask "$pkg"; else brew install "$pkg"; fi
+}
+
+# want_tool "Label" <cmd> <brew-pkg> [--cask]
+# Always shows the tool's state and asks whether switchboard should use it.
+#   installed -> default YES (Enter includes it); answer n to opt out
+#   missing   -> default NO; answering y installs via brew, then includes it
+# Echoes "yes" on stdout when the tool is in the agreed toolset.
+want_tool() {
+  local label="$1" cmd="$2" pkg="$3" cask="${4:-}"
+  if have "$cmd"; then
+    printf "  ${G}✓${X} %s ${DIM}(installed)${X}\n" "$label" >/dev/tty
+    ask "  use it for switchboard?" y && echo yes
+    return
+  fi
+  printf "  ${Y}!${X} %s ${DIM}(not installed)${X}\n" "$label" >/dev/tty
+  if ask "  install via Homebrew now?" n; then
+    if brew_install "$pkg" $cask >/dev/tty 2>&1; then
+      have "$cmd" && { echo yes; return; }
+      warn "install attempted but $cmd still not found" >/dev/tty
+    fi
+  fi
+  # not in play
+}
+
+# ── prerequisites: decide the toolset BEFORE scanning ────────────────────────
+# Scan and component prompts are gated to the tools chosen here, so a machine
+# that doesn't use (say) GCP is never probed or prompted for it.
+prerequisites() {
+  section "Prerequisites — choose your toolset"
+  WANT_DIRENV=$(want_tool "direnv (per-directory switching)" direnv direnv)
+  WANT_GH=$(want_tool "GitHub CLI" gh gh)
+  WANT_AWS=$(want_tool "AWS CLI" aws awscli)
+  WANT_GCP=$(want_tool "Google Cloud SDK" gcloud google-cloud-sdk --cask)
+  WANT_GPG=$(want_tool "GnuPG (commit signing)" gpg gnupg)
+  [ -n "$WANT_AWS" ] && WANT_JQ=$(want_tool "jq (used by AWS helpers)" jq jq)
+  printf "${DIM}  toolset: %s%s%s%s%s${X}\n" \
+    "${WANT_DIRENV:+direnv }" "${WANT_GH:+gh }" "${WANT_AWS:+aws }" "${WANT_GCP:+gcloud }" "${WANT_GPG:+gpg }"
+}
+
 # ── read-only machine scan: detect existing setup to use as prompt defaults ──
 # Nothing here writes; it only reads local config so re-runs are confirm-only.
+# Probes are gated to the agreed toolset (WANT_*).
 scan_machine() {
   set +e  # detection is best-effort; individual failing probes must not abort
   DET_LOADER=$(grep -q "switchboard/shell/switchboard.zsh" "$HOME/.zshrc" 2>/dev/null && echo yes || true)
@@ -70,25 +115,23 @@ scan_machine() {
   # existing includeIf roots (extract the gitdir path between 'gitdir:' and the trailing '.path')
   DET_INCLUDES=$(git config --global --get-regexp 'includeIf\.gitdir:' 2>/dev/null | awk '{print $1}' | sed -E 's/^[Ii]nclud[Ee][Ii]f\.gitdir:(.*)\.path$/\1/' | sort -u | tr '\n' ' ')
 
-  # available GPG secret key IDs (for the hint)
-  DET_GPG_KEYS=$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | awk '/^sec/{print $2}' | cut -d/ -f2 | tr '\n' ' ')
+  # GPG keys — only if signing is in the toolset
+  [ -n "${WANT_GPG:-}" ] && DET_GPG_KEYS=$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | awk '/^sec/{print $2}' | cut -d/ -f2 | tr '\n' ' ')
 
-  # gcloud configs
-  if have gcloud; then
-    DET_GCLOUD_CFGS=$(gcloud config configurations list --format='value(name)' 2>/dev/null | tr '\n' ' ')
-  fi
+  # gcloud configs — only if GCP is in the toolset
+  [ -n "${WANT_GCP:-}" ] && have gcloud && DET_GCLOUD_CFGS=$(gcloud config configurations list --format='value(name)' 2>/dev/null | tr '\n' ' ')
 
-  # aws profiles
-  if have aws; then
-    DET_AWS_PROFILES=$(aws configure list-profiles 2>/dev/null | tr '\n' ' ')
-  fi
+  # aws profiles — only if AWS is in the toolset
+  [ -n "${WANT_AWS:-}" ] && have aws && DET_AWS_PROFILES=$(aws configure list-profiles 2>/dev/null | tr '\n' ' ')
 
   # existing github ssh aliases
   DET_SSH_ALIASES=$(grep -cE '^Host github\.com-(work|personal)' "$HOME/.ssh/config" 2>/dev/null || echo 0)
 }
 
 printf "${B}switchboard setup${X}\n"
-printf "${DIM}Scanning machine for existing setup...${X}\n"
+prerequisites
+
+printf "\n${DIM}Scanning machine for existing setup...${X}\n"
 scan_machine
 
 section "Detected"
@@ -96,9 +139,9 @@ section "Detected"
 [ -n "$DET_P_EMAIL" ]     && ok "git personal identity: $DET_P_EMAIL"     || skip "no git identity found"
 [ -n "${DET_HAS_WORK:-}" ] && ok "git work identity: ${DET_W_EMAIL:-?}"    || skip "no work git identity"
 [ -n "$DET_INCLUDES" ]    && ok "includeIf roots: $DET_INCLUDES"          || skip "no includeIf rules"
-[ -n "${DET_GPG_KEYS:-}" ] && ok "GPG keys: ${DET_GPG_KEYS}"              || skip "no GPG secret keys"
-[ -n "${DET_GCLOUD_CFGS:-}" ] && ok "gcloud configs: ${DET_GCLOUD_CFGS}"  || skip "no gcloud configs"
-[ -n "${DET_AWS_PROFILES:-}" ] && ok "AWS profiles: $(echo $DET_AWS_PROFILES | wc -w | tr -d ' ') found" || skip "no AWS profiles"
+[ -n "${DET_GPG_KEYS:-}" ] && ok "GPG keys: ${DET_GPG_KEYS}"              || { [ -n "${WANT_GPG:-}" ] && skip "no GPG secret keys"; }
+[ -n "${DET_GCLOUD_CFGS:-}" ] && ok "gcloud configs: ${DET_GCLOUD_CFGS}"  || { [ -n "${WANT_GCP:-}" ] && skip "no gcloud configs"; }
+[ -n "${DET_AWS_PROFILES:-}" ] && ok "AWS profiles: $(echo $DET_AWS_PROFILES | wc -w | tr -d ' ') found" || { [ -n "${WANT_AWS:-}" ] && skip "no AWS profiles"; }
 [ "${DET_SSH_ALIASES:-0}" -gt 0 ] && ok "SSH github aliases present"      || skip "no SSH github aliases"
 printf "${DIM}  (scan is read-only; nothing changed. Detected values are used as defaults below.)${X}\n"
 set -e  # back to strict for the write phases
@@ -193,24 +236,32 @@ fi
 
 # ── 5. direnv per-directory cloud config ─────────────────────────────────────
 section "5. Per-directory cloud config (direnv)"
-if ! have direnv; then
-  warn "direnv not installed — 'brew install direnv' then re-run this section"
+if [ -z "${WANT_DIRENV:-}" ]; then
+  skip "direnv not in toolset — skipping per-directory switching"
+elif [ -z "${WANT_GCP:-}${WANT_AWS:-}" ]; then
+  skip "neither GCP nor AWS in toolset — nothing to switch per-directory"
 elif ask "Set up per-directory gcloud/AWS switching via .envrc?" y; then
   p_root="${code_root:-$HOME/code}"
-  [ -n "${DET_GCLOUD_CFGS:-}" ] && printf "    ${DIM}(gcloud configs found: %s)${X}\n" "$DET_GCLOUD_CFGS" >/dev/tty
-  if ask "Create ${p_root/#$HOME/\~}/.envrc (personal gcloud config)?" y; then
-    gcfg="$(prompt "Personal gcloud config name" "personal")"
-    backup "$p_root/.envrc"
-    echo "export CLOUDSDK_ACTIVE_CONFIG_NAME=$gcfg" > "$p_root/.envrc"
-    direnv allow "$p_root" 2>/dev/null && ok "wrote + allowed $p_root/.envrc"
+  if [ -n "${WANT_GCP:-}" ]; then
+    [ -n "${DET_GCLOUD_CFGS:-}" ] && printf "    ${DIM}(gcloud configs found: %s)${X}\n" "$DET_GCLOUD_CFGS" >/dev/tty
+    if ask "Create ${p_root/#$HOME/\~}/.envrc (personal gcloud config)?" y; then
+      gcfg="$(prompt "Personal gcloud config name" "personal")"
+      backup "$p_root/.envrc"
+      echo "export CLOUDSDK_ACTIVE_CONFIG_NAME=$gcfg" > "$p_root/.envrc"
+      direnv allow "$p_root" 2>/dev/null && ok "wrote + allowed $p_root/.envrc"
+    fi
   fi
-  if [ -n "${work_root:-}" ] && ask "Create ${work_root/#$HOME/\~}/.envrc (work gcloud + AWS)?" y; then
-    wgcfg="$(prompt "Work gcloud config name" "work")"
-    [ -n "${DET_AWS_PROFILES:-}" ] && printf "    ${DIM}(AWS profiles found: %s)${X}\n" "$DET_AWS_PROFILES" >/dev/tty
-    wprof="$(prompt "Default work AWS profile (blank to skip)")"
-    backup "$work_root/.envrc"
-    { echo "export CLOUDSDK_ACTIVE_CONFIG_NAME=$wgcfg"; [ -n "$wprof" ] && echo "export AWS_PROFILE=$wprof"; } > "$work_root/.envrc"
-    mkdir -p "$work_root"; direnv allow "$work_root" 2>/dev/null && ok "wrote + allowed $work_root/.envrc"
+  if [ -n "${work_root:-}" ] && ask "Create ${work_root/#$HOME/\~}/.envrc (work overrides)?" y; then
+    backup "$work_root/.envrc"; mkdir -p "$work_root"
+    {
+      [ -n "${WANT_GCP:-}" ] && { wgcfg="$(prompt "Work gcloud config name" "work")"; echo "export CLOUDSDK_ACTIVE_CONFIG_NAME=$wgcfg"; }
+      if [ -n "${WANT_AWS:-}" ]; then
+        [ -n "${DET_AWS_PROFILES:-}" ] && printf "    ${DIM}(AWS profiles found: %s)${X}\n" "$DET_AWS_PROFILES" >/dev/tty
+        wprof="$(prompt "Default work AWS profile (blank to skip)")"
+        [ -n "$wprof" ] && echo "export AWS_PROFILE=$wprof"
+      fi
+    } > "$work_root/.envrc"
+    direnv allow "$work_root" 2>/dev/null && ok "wrote + allowed $work_root/.envrc"
   fi
 else
   skip "direnv cloud config"
@@ -228,12 +279,7 @@ else
   skip "SSH aliases (template at $DIR/ssh/ssh-config.example)"
 fi
 
-# ── prerequisites report ─────────────────────────────────────────────────────
-section "Prerequisites"
-for t in direnv gh aws jq gcloud gpg; do
-  have "$t" && ok "$t" || warn "$t missing"
-done
-
 section "Done"
+printf "  Toolset: %s%s%s%s%s\n" "${WANT_DIRENV:+direnv }" "${WANT_GH:+gh }" "${WANT_AWS:+aws }" "${WANT_GCP:+gcloud }" "${WANT_GPG:+gpg }"
 printf "  Reload your shell: ${B}source ~/.zshrc${X}\n"
 printf "  Then run: ${B}my-commands${X}  and  ${B}whereami${X}\n"
