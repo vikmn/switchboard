@@ -12,38 +12,14 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_HOME="$HOME/.config/switchboard"
 TS="$(date +%Y%m%d-%H%M%S)"
 
-# ── ui helpers ───────────────────────────────────────────────────────────────
-B=$'\033[1m'; DIM=$'\033[2m'; G=$'\033[32m'; Y=$'\033[33m'; X=$'\033[0m'
-section() { printf "\n${B}%s${X}\n" "$*"; }
-ok()      { printf "  ${G}✓${X} %s\n" "$*"; }
-skip()    { printf "  ${DIM}– %s${X}\n" "$*"; }
-warn()    { printf "  ${Y}!${X} %s\n" "$*"; }
+# reusable libs (ui first: pkg.sh uses have/warn/ask from it)
+# shellcheck source=install/lib/ui.sh
+source "$DIR/install/lib/ui.sh"
+# shellcheck source=install/lib/migrate.sh
+source "$DIR/install/lib/migrate.sh"
+# shellcheck source=install/lib/pkg.sh
+source "$DIR/install/lib/pkg.sh"
 
-# ask "Question?" [default y|n]  -> returns 0 for yes
-ask() {
-  local q="$1" def="${2:-n}" hint="[y/N]" ans
-  [ "$def" = "y" ] && hint="[Y/n]"
-  printf "  %s %s " "$q" "$hint" >/dev/tty
-  read -r ans </dev/tty
-  ans="${ans:-$def}"
-  [[ "$ans" == [Yy]* ]]
-}
-
-# prompt "Label" "default" -> echoes ONLY the entered (or default) value on stdout.
-# The label is written to the terminal so it is never captured by $( ).
-prompt() {
-  local label="$1" def="${2:-}" val
-  if [ -n "$def" ]; then printf "    %s [%s]: " "$label" "$def" >/dev/tty; else printf "    %s: " "$label" >/dev/tty; fi
-  read -r val </dev/tty
-  echo "${val:-$def}"
-}
-
-backup() {
-  local f="$1"
-  if [ -e "$f" ] && [ ! -L "$f" ]; then cp "$f" "$f.bak-$TS"; warn "backed up $f -> $(basename "$f").bak-$TS"; fi
-}
-
-have() { command -v "$1" >/dev/null 2>&1; }
 
 # _sb_ensure_key <name> <email> <current-key>
 # If a signing key is already set, echoes it unchanged. If empty and gpg is in
@@ -75,120 +51,7 @@ _sb_ensure_key() {
   echo "$newkey"
 }
 
-# Names of functions/aliases switchboard now provides. Used to detect and
-# comment out stale inline copies in ~/.zshrc during migration. Only these
-# exact names are touched — unrelated config (e.g. personal 'seller', kiro) is
-# never modified.
-SB_MANAGED_FUNCS="_aws_env_color _aws_expiry _aws_box aws-login aws-status gcp-login gcp-status gcp-switch gh-login gh-status login-all auth-status env-status my-commands"
-SB_MANAGED_ALIASES="aws-profiles whereami"
 
-# comment out one 'function NAME { ... }' block in a file, matching balanced
-# braces. Wraps it in [switchboard-migrated] markers. Idempotent.
-_sb_comment_func() {
-  local file="$1" name="$2"
-  awk -v fn="$name" '
-    BEGIN { depth=0; inblk=0 }
-    # already migrated? leave as-is
-    { line=$0 }
-    # start: "function NAME {" or "function NAME() {" or "NAME() {"
-    (!inblk && ($0 ~ "^function[ \t]+" fn "[ \t]*(\\(\\))?[ \t]*\\{" || $0 ~ "^" fn "[ \t]*\\(\\)[ \t]*\\{")) {
-      inblk=1; depth=0
-      print "# [switchboard-migrated] " fn " now provided by the repo:"
-    }
-    inblk {
-      n=gsub(/\{/,"{"); m=gsub(/\}/,"}"); depth += n - m
-      print "# " line
-      if (depth<=0) { inblk=0 }
-      next
-    }
-    { print line }
-  ' "$file"
-}
-
-# comment out an 'alias NAME=...' line
-_sb_comment_alias() {
-  local file="$1" name="$2"
-  awk -v al="$name" '
-    $0 ~ "^alias[ \t]+" al "=" { print "# [switchboard-migrated] " al ":"; print "# " $0; next }
-    { print }
-  ' "$file"
-}
-
-# ── package manager abstraction (macOS Homebrew + common Linux managers) ─────
-# Detected once. Supported: brew, apt, dnf, pacman, zypper. Unknown -> manual.
-detect_pkg_mgr() {
-  if have brew; then echo brew
-  elif have apt-get; then echo apt
-  elif have dnf; then echo dnf
-  elif have pacman; then echo pacman
-  elif have zypper; then echo zypper
-  else echo none; fi
-}
-PKG_MGR="$(detect_pkg_mgr)"
-
-# pkg_install <tool-key> — install a tool by its logical key using PKG_MGR.
-# Package names differ per manager; unknown/unavailable tools print a manual
-# hint and return non-zero rather than pretending.
-pkg_install() {
-  local key="$1" pkg="" sudo=""
-  [ "$PKG_MGR" != brew ] && [ "$(id -u)" -ne 0 ] && sudo="sudo"
-  case "$PKG_MGR:$key" in
-    brew:direnv|apt:direnv|dnf:direnv|pacman:direnv|zypper:direnv) pkg=direnv ;;
-    brew:gh)     pkg=gh ;;
-    zypper:gh)   pkg=gh ;;
-    pacman:gh)   pkg=github-cli ;;
-    apt:gh|dnf:gh)
-      # gh is not in default Ubuntu/Debian/Fedora repos — needs GitHub's repo added first.
-      warn "GitHub CLI isn't in default $PKG_MGR repos. Add GitHub's repo then install:" >/dev/tty
-      warn "  https://github.com/cli/cli/blob/trunk/docs/install_linux.md" >/dev/tty
-      return 1 ;;
-    brew:aws)    pkg=awscli ;;
-    apt:aws|dnf:aws|zypper:aws) pkg=awscli ;;
-    pacman:aws)  pkg=aws-cli-v2 ;;
-    brew:jq|apt:jq|dnf:jq|pacman:jq|zypper:jq) pkg=jq ;;
-    brew:gpg)    pkg=gnupg ;;
-    apt:gpg)     pkg=gnupg ;;
-    dnf:gpg|zypper:gpg) pkg=gnupg2 ;;
-    pacman:gpg)  pkg=gnupg ;;
-    brew:gcloud) pkg="--cask google-cloud-sdk" ;;
-    *:gcloud)    warn "gcloud isn't in $PKG_MGR repos — install: https://cloud.google.com/sdk/docs/install" >/dev/tty; return 1 ;;
-    *)           warn "no package mapping for '$key' on $PKG_MGR — install it manually" >/dev/tty; return 1 ;;
-  esac
-  case "$PKG_MGR" in
-    brew)   # shellcheck disable=SC2086  # pkg may include --cask, must split
-            brew install $pkg ;;
-    apt)    $sudo apt-get update -qq && $sudo apt-get install -y "$pkg" ;;
-    dnf)    $sudo dnf install -y "$pkg" ;;
-    pacman) $sudo pacman -S --noconfirm "$pkg" ;;
-    zypper) $sudo zypper install -y "$pkg" ;;
-    none)   warn "no supported package manager found — install '$key' manually" >/dev/tty; return 1 ;;
-  esac
-}
-
-# want_tool "Label" <cmd> <tool-key>
-# Shows state and asks whether switchboard should use it.
-#   installed -> default YES; missing -> offer install via the detected manager.
-# Echoes "yes" when the tool is in the agreed toolset.
-want_tool() {
-  local label="$1" cmd="$2" key="$3"
-  if have "$cmd"; then
-    printf "  ${G}✓${X} %s ${DIM}(installed)${X}\n" "$label" >/dev/tty
-    ask "  use it for switchboard?" y && echo yes
-    return
-  fi
-  printf "  ${Y}!${X} %s ${DIM}(not installed)${X}\n" "$label" >/dev/tty
-  if [ "$PKG_MGR" = none ]; then
-    warn "no supported package manager detected — install $cmd manually, then re-run" >/dev/tty
-    return
-  fi
-  if ask "  install via $PKG_MGR now?" n; then
-    if pkg_install "$key" >/dev/tty 2>&1; then
-      have "$cmd" && { echo yes; return; }
-      warn "install attempted but $cmd still not found" >/dev/tty
-    fi
-  fi
-  # not in play
-}
 
 # ── prerequisites: decide the toolset BEFORE scanning ────────────────────────
 # Scan and component prompts are gated to the tools chosen here, so a machine

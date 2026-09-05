@@ -77,7 +77,7 @@ shell/      switchboard.zsh (loader) · lib/{aws,gcp,github,views}.zsh · local.
 git/        gitconfig[.example] + personal/work includes + gitignore_global
 direnv/     envrc.{personal,work,repo-override}.example
 ssh/        ssh-config.example
-install.sh · uninstall.sh · hooks/pre-commit
+install.sh · uninstall.sh · hooks/pre-commit · install/lib/{ui,pkg,migrate}.sh
 ```
 
 ## Optional prod guard
