@@ -41,6 +41,45 @@ backup() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Names of functions/aliases switchboard now provides. Used to detect and
+# comment out stale inline copies in ~/.zshrc during migration. Only these
+# exact names are touched — unrelated config (e.g. personal 'seller', kiro) is
+# never modified.
+SB_MANAGED_FUNCS="_aws_env_color _aws_expiry _aws_box aws-login aws-status gcp-login gcp-status gcp-switch gh-login gh-status login-all auth-status env-status my-commands"
+SB_MANAGED_ALIASES="aws-profiles whereami"
+
+# comment out one 'function NAME { ... }' block in a file, matching balanced
+# braces. Wraps it in [switchboard-migrated] markers. Idempotent.
+_sb_comment_func() {
+  local file="$1" name="$2"
+  awk -v fn="$name" '
+    BEGIN { depth=0; inblk=0 }
+    # already migrated? leave as-is
+    { line=$0 }
+    # start: "function NAME {" or "function NAME() {" or "NAME() {"
+    (!inblk && ($0 ~ "^function[ \t]+" fn "[ \t]*(\\(\\))?[ \t]*\\{" || $0 ~ "^" fn "[ \t]*\\(\\)[ \t]*\\{")) {
+      inblk=1; depth=0
+      print "# [switchboard-migrated] " fn " now provided by the repo:"
+    }
+    inblk {
+      n=gsub(/\{/,"{"); m=gsub(/\}/,"}"); depth += n - m
+      print "# " line
+      if (depth<=0) { inblk=0 }
+      next
+    }
+    { print line }
+  ' "$file"
+}
+
+# comment out an 'alias NAME=...' line
+_sb_comment_alias() {
+  local file="$1" name="$2"
+  awk -v al="$name" '
+    $0 ~ "^alias[ \t]+" al "=" { print "# [switchboard-migrated] " al ":"; print "# " $0; next }
+    { print }
+  ' "$file"
+}
+
 # brew_install <formula-or-cask> [--cask] — install via Homebrew if brew exists.
 brew_install() {
   local pkg="$1" cask="${2:-}"
@@ -157,6 +196,40 @@ elif ask "Add the switchboard source line to ~/.zshrc?" y; then
   ok "added source line to ~/.zshrc"
 else
   skip "shell loader (you can add it later)"
+fi
+
+# ── 1b. migrate inline definitions ───────────────────────────────────────────
+# If switchboard functions are already defined INLINE in ~/.zshrc (e.g. built
+# up by hand), comment them out so the sourced repo is the single source. Only
+# the known managed names are touched; personal helpers are left alone.
+section "1b. Migrate inline definitions"
+zrc="$HOME/.zshrc"
+_sb_found=""
+for fn in $SB_MANAGED_FUNCS; do
+  grep -qE "^(function[ \t]+)?$fn[ \t]*(\(\))?[ \t]*\{" "$zrc" 2>/dev/null && \
+    ! grep -qE "^# \[switchboard-migrated\] $fn " "$zrc" 2>/dev/null && _sb_found="$_sb_found $fn"
+done
+for al in $SB_MANAGED_ALIASES; do
+  grep -qE "^alias[ \t]+$al=" "$zrc" 2>/dev/null && _sb_found="$_sb_found alias:$al"
+done
+
+if [ -z "$_sb_found" ]; then
+  skip "no inline switchboard definitions found"
+elif ask "Found inline definitions ($(echo $_sb_found | tr ' ' ',')). Comment them out so the repo is the source?" y; then
+  backup "$zrc"
+  for item in $_sb_found; do
+    tmp="$(mktemp)"
+    if [[ "$item" == alias:* ]]; then
+      _sb_comment_alias "$zrc" "${item#alias:}" > "$tmp" && mv "$tmp" "$zrc"
+      ok "commented inline alias ${item#alias:}"
+    else
+      _sb_comment_func "$zrc" "$item" > "$tmp" && mv "$tmp" "$zrc"
+      ok "commented inline $item"
+    fi
+  done
+  warn "review ~/.zshrc; the repo now provides these. Backup: $(basename "$zrc").bak-$TS"
+else
+  skip "migration (inline copies remain; sourced repo will still take precedence as it loads last)"
 fi
 
 # ── 2. machine-local overrides ───────────────────────────────────────────────
