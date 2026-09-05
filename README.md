@@ -83,6 +83,7 @@ ssh/
   ssh-config.example       github.com-work / github.com-personal aliases
 install.sh                 interactive, idempotent, non-destructive bootstrap
 uninstall.sh               removes the loader + restores migrated inline funcs
+hooks/pre-commit           contributor hook: leak scan + shellcheck (see Contributing)
 ```
 
 ## Optional prod safety guard
@@ -92,6 +93,21 @@ By default `aws-login` makes no assumption about your profile naming. Set `SWITC
 ```zsh
 export SWITCHBOARD_PROD_PATTERN='prod|Production|live'
 ```
+
+## Contributing
+
+If you're editing switchboard itself, enable the pre-commit hook so commits are checked automatically:
+
+```bash
+git config core.hooksPath hooks     # (install.sh also offers to do this)
+brew install shellcheck             # optional; the hook skips lint if absent
+```
+
+On each commit the hook:
+- **leak-scans** the staged diff for high-confidence secrets (AWS keys, private-key blocks, GitHub tokens, `api_key`/`token`/`password` assignments) and refuses the commit if any match;
+- **shellchecks** staged `install.sh` / `uninstall.sh`.
+
+Bypass in a genuine false-positive with `git commit --no-verify`. This is contributor tooling only — it plays no part in what switchboard sets up on a user's machine.
 
 ## One GitHub account, two aliases?
 
