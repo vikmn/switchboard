@@ -340,6 +340,22 @@ else
   skip "global gitignore"
 fi
 
+# ── 3b. GitHub CLI auth (before identity: the GPG upload below needs it) ─────
+section "3b. GitHub CLI authentication"
+if [ -z "${WANT_GH:-}" ]; then
+  skip "gh not in toolset"
+elif ! have gh; then
+  skip "gh not installed"
+elif gh auth status >/dev/null 2>&1; then
+  ok "gh already authenticated ($(gh api user --jq .login 2>/dev/null))"
+elif ask "gh is not authenticated — log in now (needed to push keys / open PRs)?" y; then
+  gh auth login --web --git-protocol ssh </dev/tty >/dev/tty 2>&1
+  if gh auth status >/dev/null 2>&1; then ok "authenticated as $(gh api user --jq .login 2>/dev/null)"
+  else warn "gh still not authenticated — run 'gh auth login' later"; fi
+else
+  skip "gh auth (run 'gh auth login' when ready)"
+fi
+
 # ── 4. git identity (personal always; work optional) ─────────────────────────
 section "4. Git identity (directory-based)"
 if ask "Configure git identity switching?" y; then
