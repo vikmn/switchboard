@@ -114,29 +114,70 @@ _sb_comment_alias() {
   ' "$file"
 }
 
-# brew_install <formula-or-cask> [--cask] — install via Homebrew if brew exists.
-brew_install() {
-  local pkg="$1" cask="${2:-}"
-  if ! have brew; then warn "Homebrew not found — install it first: https://brew.sh" >/dev/tty; return 1; fi
-  if [ "$cask" = "--cask" ]; then brew install --cask "$pkg"; else brew install "$pkg"; fi
+# ── package manager abstraction (macOS Homebrew + common Linux managers) ─────
+# Detected once. Supported: brew, apt, dnf, pacman, zypper. Unknown -> manual.
+detect_pkg_mgr() {
+  if have brew; then echo brew
+  elif have apt-get; then echo apt
+  elif have dnf; then echo dnf
+  elif have pacman; then echo pacman
+  elif have zypper; then echo zypper
+  else echo none; fi
+}
+PKG_MGR="$(detect_pkg_mgr)"
+
+# pkg_install <tool-key> — install a tool by its logical key using PKG_MGR.
+# Package names differ per manager; unknown/unavailable tools print a manual
+# hint and return non-zero rather than pretending.
+pkg_install() {
+  local key="$1" pkg="" sudo=""
+  [ "$PKG_MGR" != brew ] && [ "$(id -u)" -ne 0 ] && sudo="sudo"
+  case "$PKG_MGR:$key" in
+    brew:direnv|apt:direnv|dnf:direnv|pacman:direnv|zypper:direnv) pkg=direnv ;;
+    brew:gh)     pkg=gh ;;
+    apt:gh|dnf:gh|zypper:gh) pkg=gh ;;      # requires the GitHub CLI repo on some distros
+    pacman:gh)   pkg=github-cli ;;
+    brew:aws)    pkg=awscli ;;
+    apt:aws|dnf:aws|zypper:aws) pkg=awscli ;;
+    pacman:aws)  pkg=aws-cli-v2 ;;
+    brew:jq|apt:jq|dnf:jq|pacman:jq|zypper:jq) pkg=jq ;;
+    brew:gpg)    pkg=gnupg ;;
+    apt:gpg)     pkg=gnupg ;;
+    dnf:gpg|zypper:gpg) pkg=gnupg2 ;;
+    pacman:gpg)  pkg=gnupg ;;
+    brew:gcloud) pkg="--cask google-cloud-sdk" ;;
+    *:gcloud)    warn "gcloud isn't in $PKG_MGR repos — install: https://cloud.google.com/sdk/docs/install" >/dev/tty; return 1 ;;
+    *)           warn "no package mapping for '$key' on $PKG_MGR — install it manually" >/dev/tty; return 1 ;;
+  esac
+  case "$PKG_MGR" in
+    brew)   # shellcheck disable=SC2086  # pkg may include --cask, must split
+            brew install $pkg ;;
+    apt)    $sudo apt-get update -qq && $sudo apt-get install -y "$pkg" ;;
+    dnf)    $sudo dnf install -y "$pkg" ;;
+    pacman) $sudo pacman -S --noconfirm "$pkg" ;;
+    zypper) $sudo zypper install -y "$pkg" ;;
+    none)   warn "no supported package manager found — install '$key' manually" >/dev/tty; return 1 ;;
+  esac
 }
 
-# want_tool "Label" <cmd> <brew-pkg> [--cask]
-# Always shows the tool's state and asks whether switchboard should use it.
-#   installed -> default YES (Enter includes it); answer n to opt out
-#   missing   -> default NO; answering y installs via brew, then includes it
-# Echoes "yes" on stdout when the tool is in the agreed toolset.
+# want_tool "Label" <cmd> <tool-key>
+# Shows state and asks whether switchboard should use it.
+#   installed -> default YES; missing -> offer install via the detected manager.
+# Echoes "yes" when the tool is in the agreed toolset.
 want_tool() {
-  local label="$1" cmd="$2" pkg="$3" cask="${4:-}"
+  local label="$1" cmd="$2" key="$3"
   if have "$cmd"; then
     printf "  ${G}✓${X} %s ${DIM}(installed)${X}\n" "$label" >/dev/tty
     ask "  use it for switchboard?" y && echo yes
     return
   fi
   printf "  ${Y}!${X} %s ${DIM}(not installed)${X}\n" "$label" >/dev/tty
-  if ask "  install via Homebrew now?" n; then
-    # shellcheck disable=SC2086  # $cask must word-split to pass --cask as a separate arg
-  if brew_install "$pkg" $cask >/dev/tty 2>&1; then
+  if [ "$PKG_MGR" = none ]; then
+    warn "no supported package manager detected — install $cmd manually, then re-run" >/dev/tty
+    return
+  fi
+  if ask "  install via $PKG_MGR now?" n; then
+    if pkg_install "$key" >/dev/tty 2>&1; then
       have "$cmd" && { echo yes; return; }
       warn "install attempted but $cmd still not found" >/dev/tty
     fi
@@ -149,11 +190,12 @@ want_tool() {
 # that doesn't use (say) GCP is never probed or prompted for it.
 prerequisites() {
   section "Prerequisites — choose your toolset"
+  printf "${DIM}  package manager: %s${X}\n" "$PKG_MGR"
   WANT_DIRENV=$(want_tool "direnv (per-directory switching)" direnv direnv)
   WANT_GH=$(want_tool "GitHub CLI" gh gh)
-  WANT_AWS=$(want_tool "AWS CLI" aws awscli)
-  WANT_GCP=$(want_tool "Google Cloud SDK" gcloud google-cloud-sdk --cask)
-  WANT_GPG=$(want_tool "GnuPG (commit signing)" gpg gnupg)
+  WANT_AWS=$(want_tool "AWS CLI" aws aws)
+  WANT_GCP=$(want_tool "Google Cloud SDK" gcloud gcloud)
+  WANT_GPG=$(want_tool "GnuPG (commit signing)" gpg gpg)
   [ -n "$WANT_AWS" ] && WANT_JQ=$(want_tool "jq (used by AWS helpers)" jq jq)
   printf "${DIM}  toolset: %s%s%s%s%s${X}\n" \
     "${WANT_DIRENV:+direnv }" "${WANT_GH:+gh }" "${WANT_AWS:+aws }" "${WANT_GCP:+gcloud }" "${WANT_GPG:+gpg }"

@@ -2,7 +2,7 @@
 
 <img src="assets/switchboard-logo.svg" alt="switchboard" width="220">
 
-![platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 ![shell](https://img.shields.io/badge/shell-zsh-89e051)
 ![requires](https://img.shields.io/badge/requires-git-f34f29)
 
@@ -10,9 +10,9 @@
 
 # switchboard
 
-**A macOS/zsh setup that switches your git identity, gcloud config, and AWS profile automatically based on which directory you're in** — work context in work repos, personal everywhere else. It's a dotfiles-style bootstrap: clone it on any machine, run one guided installer, and get the same directory-aware setup plus a handful of auth helpers. It solves the everyday hazard of committing with the wrong key or running commands against the wrong cloud account.
+**A zsh setup (macOS or Linux) that switches your git identity, gcloud config, and AWS profile automatically based on which directory you're in** — work context in work repos, personal everywhere else. It's a dotfiles-style bootstrap: clone it on any machine, run one guided installer, and get the same directory-aware setup plus a handful of auth helpers. It solves the everyday hazard of committing with the wrong key or running commands against the wrong cloud account.
 
-> Requires **macOS · zsh · Homebrew**. Linux/bash not supported.
+> Requires **zsh** on **macOS or Linux**, plus a package manager (Homebrew, apt, dnf, pacman, or zypper) for the optional tool installs. Bash is not supported.
 
 ## Why
 

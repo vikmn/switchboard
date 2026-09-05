@@ -41,4 +41,4 @@ It leak-scans staged changes (AWS keys, private-key blocks, tokens,
   shellchecked. Prefer `printf` over `echo` for anything with escapes.
 - **Safety**: anything that writes to a user's dotfiles must back up first and
   confirm before overwriting — follow the pattern in `install.sh`.
-- **Platform**: macOS + zsh + Homebrew; avoid hard dependencies outside that.
+- **Platform**: zsh on macOS or Linux; installs via Homebrew/apt/dnf/pacman/zypper. Avoid hard deps outside that.

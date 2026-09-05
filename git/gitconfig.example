@@ -23,7 +23,7 @@
 [tag]
 	gpgsign = true
 [gpg]
-	program = /opt/homebrew/bin/gpg   ; Apple Silicon Homebrew; adjust on Intel/Linux
+	program = gpg   ; or an absolute path from `command -v gpg` (install.sh sets this for you)
 
 [core]
 	excludesfile = ~/.gitignore_global
