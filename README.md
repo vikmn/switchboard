@@ -30,7 +30,7 @@ The installer is interactive and idempotent. It walks you through:
 1. **Prerequisites** — for each tool, shows whether it's installed and asks if switchboard should use it. Missing ones can be installed via Homebrew on the spot. Your answers become the "toolset" that gates the rest.
 2. **Scan** — reads your existing config (git identity, GPG keys, gcloud configs, AWS profiles, SSH aliases) and uses it as prefilled defaults, so re-running on a set-up machine is mostly pressing Enter.
 3. **Shell loader + migration** — sources the repo from `~/.zshrc`, and if you already have these functions defined inline, comments them out so the repo is the single source (backs up first).
-4. **Git identity** — writes `~/.gitconfig-personal` / `-work` and the directory `includeIf` rules (won't clobber an existing `~/.gitconfig` without asking).
+4. **Git identity** — writes `~/.gitconfig-personal` / `-work` and the directory `includeIf` rules (won't clobber an existing `~/.gitconfig` without asking). If GPG is in your toolset and a signing key is missing, it offers to generate one and upload the public key to GitHub via `gh`.
 5. **direnv `.envrc`s** — drops per-directory gcloud/AWS config at your personal and work roots.
 6. **SSH aliases** — optional `github.com-work` / `github.com-personal` host entries.
 

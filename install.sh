@@ -41,6 +41,31 @@ backup() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# _sb_ensure_key <name> <email> <current-key>
+# If a signing key is already set, echoes it unchanged. If empty and gpg is in
+# the toolset, offers to generate one (RSA 4096) for "Name <email>", then
+# optionally uploads the public key to GitHub via gh. Echoes the resulting key
+# ID (or empty to leave signing off). Prompts go to the terminal.
+_sb_ensure_key() {
+  local name="$1" email="$2" key="$3"
+  if [ -n "$key" ]; then echo "$key"; return; fi
+  [ -z "${WANT_GPG:-}" ] && return          # gpg not in toolset -> leave unsigned
+  [ -z "$email" ] && return                 # need an email to bind the key
+  if ! ask "  no signing key for $email — generate a GPG key now?" n; then return; fi
+
+  gpg --batch --quick-generate-key "${name:-$email} <$email>" rsa4096 default 0 >/dev/tty 2>&1
+  local newkey
+  newkey=$(gpg --list-secret-keys --with-colons "$email" 2>/dev/null | awk -F: '/^sec/{print $5; exit}')
+  if [ -z "$newkey" ]; then warn "key generation failed for $email" >/dev/tty; return; fi
+  ok "generated GPG key $newkey for $email" >/dev/tty
+
+  if have gh && ask "  upload the public key to GitHub (gh gpg-key add)?" y; then
+    gpg --armor --export "$newkey" | gh gpg-key add - >/dev/tty 2>&1 && ok "uploaded to GitHub" >/dev/tty \
+      || warn "gh upload failed — add it manually: gpg --armor --export $newkey" >/dev/tty
+  fi
+  echo "$newkey"
+}
+
 # Names of functions/aliases switchboard now provides. Used to detect and
 # comment out stale inline copies in ~/.zshrc during migration. Only these
 # exact names are touched — unrelated config (e.g. personal 'seller', kiro) is
@@ -263,6 +288,7 @@ if ask "Configure git identity switching?" y; then
   p_email="$(prompt "Personal email" "$DET_P_EMAIL")"
   [ -n "${DET_GPG_KEYS:-}" ] && printf "    ${DIM}(available GPG keys: %s)${X}\n" "$DET_GPG_KEYS" >/dev/tty
   p_key="$(prompt "Personal GPG signing key ID (blank to skip signing)" "$DET_P_KEY")"
+  p_key="$(_sb_ensure_key "$p_name" "$p_email" "$p_key")"
 
   work_root=""
   if ask "Do you also have a WORK identity (separate email/key under a subfolder)?" "${DET_HAS_WORK:+y}"; then
@@ -270,6 +296,7 @@ if ask "Configure git identity switching?" y; then
     w_name="$(prompt "Work name" "${DET_W_NAME:-$p_name}")"
     w_email="$(prompt "Work email" "${DET_W_EMAIL:-}")"
     w_key="$(prompt "Work GPG signing key ID (blank to skip)" "${DET_W_KEY:-}")"
+    w_key="$(_sb_ensure_key "$w_name" "$w_email" "$w_key")"
   fi
 
   write_identity() { # write_identity <file> <name> <email> <key>
