@@ -106,18 +106,7 @@ export SWITCHBOARD_PROD_PATTERN='prod|Production|live'
 
 ## Contributing
 
-If you're editing switchboard itself, enable the pre-commit hook so commits are checked automatically:
-
-```bash
-git config core.hooksPath hooks     # (install.sh also offers to do this)
-brew install shellcheck             # optional; the hook skips lint if absent
-```
-
-On each commit the hook:
-- **leak-scans** the staged diff for high-confidence secrets (AWS keys, private-key blocks, GitHub tokens, `api_key`/`token`/`password` assignments) and refuses the commit if any match;
-- **shellchecks** staged `install.sh` / `uninstall.sh`.
-
-Bypass in a genuine false-positive with `git commit --no-verify`. This is contributor tooling only — it plays no part in what switchboard sets up on a user's machine.
+PRs welcome. `main` is protected — open a pull request (fork → branch → PR) and it merges after review. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, the pre-commit hook (leak scan + shellcheck), and style/scope notes.
 
 ## One GitHub account, two aliases?
 
