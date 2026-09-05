@@ -4,6 +4,8 @@ Your terminal, wired so **identity and cloud context follow the directory you're
 
 Clone it on a new machine, run one guided installer, and you get the same setup everywhere.
 
+> **Requirements: macOS · zsh · Homebrew.** The helpers use zsh (`compdef`, `autoload`) and macOS-specific tools (`date -j`, `pbcopy`), and the installer uses Homebrew for optional tools. Linux and bash are not currently supported.
+
 ## Why
 
 Juggling personal and work accounts on one machine is error-prone: commits signed with the wrong key, `terraform apply` against the wrong AWS account, `gcloud` pointed at the wrong project. switchboard removes the manual step. It keys everything off the directory:
@@ -18,7 +20,7 @@ Plus auth helpers (`aws-login`, `gcp-switch`, `whereami`, ...) and a `my-command
 
 ## Quick start
 
-**Only prerequisite: `git`.** Everything else (direnv, gh, aws, gcloud, gpg, jq) is optional and the installer offers to install each one via Homebrew if you want it.
+**Platform: macOS + zsh + Homebrew** (see Requirements above). **Only tool prerequisite: `git`.** Everything else (direnv, gh, aws, gcloud, gpg, jq) is optional and the installer offers to install each one via Homebrew if you want it.
 
 ```bash
 git clone git@github.com:<you>/switchboard.git ~/code/switchboard

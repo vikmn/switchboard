@@ -5,9 +5,9 @@
 # ── AWS ────────────────────────────────────────────────────────────────────
 # Colour by environment: prod=red, stage=yellow, else green.
 function _aws_env_color() {
-  if [[ "$1" == *prod* || "$1" == *Production* ]]; then echo "\033[1;31m"
-  elif [[ "$1" == *stage* ]]; then echo "\033[33m"
-  else echo "\033[32m"; fi
+  if [[ "$1" == *prod* || "$1" == *Production* ]]; then printf '%s' $'\033[1;31m'
+  elif [[ "$1" == *stage* ]]; then printf '%s' $'\033[33m'
+  else printf '%s' $'\033[32m'; fi
 }
 
 # Time remaining on the most recent SSO cache token.
@@ -117,7 +117,9 @@ function gh-status {
 # ── Unified views ────────────────────────────────────────────────────────────
 function login-all {
   echo "🏁 Logging in to all services..."; echo ""
-  aws-login ${1:-default}; echo ""
+  local awsp="${1:-${SWITCHBOARD_DEFAULT_AWS_PROFILE:-}}"
+  if [ -n "$awsp" ]; then aws-login "$awsp"; else echo "⏭️  AWS: no profile given and SWITCHBOARD_DEFAULT_AWS_PROFILE unset — skipping (run: aws-login <profile>)"; fi
+  echo ""
   gcp-login; echo ""
   gh-status; echo ""
   echo "Done. Run 'auth-status' to check all sessions."
