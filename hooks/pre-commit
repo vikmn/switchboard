@@ -29,15 +29,15 @@ if [ -n "$added" ]; then
   fi
 fi
 
-# ── 2. shellcheck the staged bash installers ─────────────────────────────────
-# Only install.sh / uninstall.sh are linted; the shell/*.zsh files use zsh-only
-# syntax (compdef, autoload, $'...') that shellcheck can't parse.
+# ── 2. shellcheck the staged bash scripts ───────────────────────────────────
+# Lints install.sh, uninstall.sh, and install/lib/*.sh; the shell/*.zsh files
+# use zsh-only syntax (compdef, autoload, $'...') that shellcheck can't parse.
 if command -v shellcheck >/dev/null 2>&1; then
-  staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(install|uninstall)\.sh$' || true)
+  staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(install|uninstall)\.sh$|^install/lib/.*\.sh$' || true)
   if [ -n "$staged" ]; then
     echo "pre-commit: shellcheck $staged"
     # shellcheck disable=SC2086  # word-splitting is intended for the file list
-    shellcheck --shell=bash $staged || { echo "pre-commit: shellcheck failed."; fail=1; }
+    shellcheck -x --shell=bash $staged || { echo "pre-commit: shellcheck failed."; fail=1; }
   fi
 else
   echo "pre-commit: shellcheck not installed — skipping lint (brew install shellcheck)"
