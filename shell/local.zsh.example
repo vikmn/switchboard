@@ -25,6 +25,12 @@
 # ── Default AWS profile fallback for login-all ───────────────────────────────
 # export SWITCHBOARD_DEFAULT_AWS_PROFILE="my-default.Developer"
 
+# ── Opt-in prod safety guard (OFF by default) ────────────────────────────────
+# If set, aws-login shows a red confirm-guard before logging into a profile
+# whose name matches, and env-colours profiles by tier. Extended regex.
+# export SWITCHBOARD_PROD_PATTERN='prod|Production|live'
+# export SWITCHBOARD_STAGE_PATTERN='stage|staging'
+
 # ── Extend the my-commands cheatsheet with your personal commands ────────────
 # Define my-commands-local and it will be appended to `my-commands` output.
 #

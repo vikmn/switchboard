@@ -3,14 +3,27 @@
 # ~/.config/switchboard/local.zsh (see local.zsh.example), not here.
 
 # ── AWS ────────────────────────────────────────────────────────────────────
-# Colour by environment: prod=red, stage=yellow, else green.
+# Environment awareness is OPT-IN and OFF by default — a generic tool makes no
+# assumption about your profile naming. Set these in ~/.config/switchboard/
+# local.zsh to enable the prod confirm-guard and env colouring for profiles
+# whose name matches, e.g.:
+#   SWITCHBOARD_PROD_PATTERN='prod|Production|live'
+#   SWITCHBOARD_STAGE_PATTERN='stage|staging'
+# Unset (default) => aws-login never guards or colours by environment.
+
+# _aws_is_prod <profile> -> 0 if it matches the configured prod pattern
+_aws_is_prod() { [ -n "${SWITCHBOARD_PROD_PATTERN:-}" ] && [[ "$1" =~ (${SWITCHBOARD_PROD_PATTERN}) ]]; }
+
+# Colour by environment (only if a pattern is configured; neutral otherwise).
 function _aws_env_color() {
-  if [[ "$1" == *prod* || "$1" == *Production* ]]; then printf '%s' $'\033[1;31m'
-  elif [[ "$1" == *stage* ]]; then printf '%s' $'\033[33m'
+  if _aws_is_prod "$1"; then printf '%s' $'\033[1;31m'
+  elif [ -n "${SWITCHBOARD_STAGE_PATTERN:-}" ] && [[ "$1" =~ (${SWITCHBOARD_STAGE_PATTERN}) ]]; then printf '%s' $'\033[33m'
   else printf '%s' $'\033[32m'; fi
 }
 
-# Time remaining on the most recent SSO cache token.
+# Time remaining on the most recent SSO cache token. NOTE: this is the newest
+# token across all cached SSO sessions, which may not be the current profile's
+# if you have several active. Treated as a rough indicator, not exact.
 function _aws_expiry() {
   local latest=$(find ~/.aws/sso/cache -name '*.json' -exec jq -r 'select(.startUrl and .expiresAt) | .expiresAt' {} \; 2>/dev/null | sort -r | head -1)
   if [ -n "$latest" ]; then
@@ -35,15 +48,16 @@ function _aws_box() {
   printf "${color}└──────────────────────────────────┘\033[0m\n"
 }
 
-# aws-login <profile> — reuse cached creds or SSO login; confirms on prod.
+# aws-login <profile> — reuse cached creds or SSO login. If SWITCHBOARD_PROD_PATTERN
+# is set and the profile matches, shows a red confirm-guard first.
 function aws-login {
   local profile=$1
   local color=$(_aws_env_color "$profile")
-  if [[ "$profile" == *prod* || "$profile" == *Production* ]]; then
+  if _aws_is_prod "$profile"; then
     printf "${color}┌──────────────────────────────────┐\033[0m\n"
     printf "${color}│  ⚠️  %-27s │\033[0m\n" "${profile%%.*}  PROD"
     printf "${color}└──────────────────────────────────┘\033[0m\n"
-    printf "Continue? (y/n) "; read -r confirm
+    printf "Continue? (y/n) " > /dev/tty; local confirm; read -r confirm < /dev/tty
     [[ $confirm != "y" ]] && echo "❌ Login cancelled" && return 1
   fi
   if aws configure export-credentials --profile $profile --format env >/dev/null 2>&1; then
@@ -101,7 +115,8 @@ function gcp-switch {
   echo "☁️  gcloud → $target ($(gcloud config get-value account 2>/dev/null), project: $(gcloud config get-value project 2>/dev/null || echo unset))"
 }
 _gcp_switch_completions() { compadd $(gcloud config configurations list --format='value(name)' 2>/dev/null) }
-compdef _gcp_switch_completions gcp-switch 2>/dev/null
+# register completion only if the completion system is loaded (compinit has run)
+(( $+functions[compdef] )) && compdef _gcp_switch_completions gcp-switch 2>/dev/null
 
 # ── GitHub ───────────────────────────────────────────────────────────────────
 function gh-login {

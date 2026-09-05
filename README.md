@@ -23,9 +23,11 @@ Plus auth helpers (`aws-login`, `gcp-switch`, `whereami`, ...) and a `my-command
 **Platform: macOS + zsh + Homebrew** (see Requirements above). **Only tool prerequisite: `git`.** Everything else (direnv, gh, aws, gcloud, gpg, jq) is optional and the installer offers to install each one via Homebrew if you want it.
 
 ```bash
-git clone git@github.com:<you>/switchboard.git ~/code/switchboard
+git clone https://github.com/<you>/switchboard.git ~/code/switchboard
 ~/code/switchboard/install.sh
 ```
+
+(Clone over HTTPS so you don't need SSH keys set up first — the installer configures the `github.com-work`/`-personal` SSH aliases later. If you already have SSH working, `git@github.com:<you>/switchboard.git` is fine too.)
 
 The installer is interactive and idempotent. It walks you through:
 
@@ -80,6 +82,15 @@ direnv/
 ssh/
   ssh-config.example       github.com-work / github.com-personal aliases
 install.sh                 interactive, idempotent, non-destructive bootstrap
+uninstall.sh               removes the loader + restores migrated inline funcs
+```
+
+## Optional prod safety guard
+
+By default `aws-login` makes no assumption about your profile naming. Set `SWITCHBOARD_PROD_PATTERN` (and optionally `SWITCHBOARD_STAGE_PATTERN`) in `~/.config/switchboard/local.zsh` to enable a red confirm-guard before logging into matching profiles, and tier-based colouring:
+
+```zsh
+export SWITCHBOARD_PROD_PATTERN='prod|Production|live'
 ```
 
 ## One GitHub account, two aliases?
