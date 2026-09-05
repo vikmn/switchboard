@@ -54,7 +54,7 @@ Nothing is overwritten without a timestamped backup.
 - `aws-status` / `gcp-status` / `gh-status` — per-service session checks.
 - `gcp-switch <config>` — manual gcloud config switch (Tab-completes).
 - `login-all` / `auth-status` — do / check everything at once.
-- `env-status` (alias `whereami`) — active context for this shell: **● active / ○ expired** per service, plus the driving `.envrc` and resolved git identity.
+- `env-status` (alias `whereami`) — active context for this shell: **● active / ○ expired** per service, plus the driving `.envrc` and resolved git identity. Makes live checks by default; use `whereami --fast` for an instant offline view (configured names only, status shown as `?`).
 - `my-commands` — the cheatsheet; extend it with a `my-commands-local` function in your local config.
 
 ## What's committed vs local

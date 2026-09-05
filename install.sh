@@ -154,9 +154,9 @@ prerequisites() {
 
 # ── read-only machine scan: detect existing setup to use as prompt defaults ──
 # Nothing here writes; it only reads local config so re-runs are confirm-only.
-# Probes are gated to the agreed toolset (WANT_*).
+# Probes are gated to the agreed toolset (WANT_*). Best-effort: the caller
+# disables errexit around it so an individual failing probe can't abort setup.
 scan_machine() {
-  set +e  # detection is best-effort; individual failing probes must not abort
   DET_LOADER=$(grep -q "switchboard/shell/switchboard.zsh" "$HOME/.zshrc" 2>/dev/null && echo yes || true)
   DET_LOCAL=$([ -f "$CONFIG_HOME/local.zsh" ] && echo yes || true)
   DET_GITIGNORE=$([ -f "$HOME/.gitignore_global" ] && echo yes || true)
@@ -199,6 +199,8 @@ printf "${B}switchboard setup${X}\n"
 prerequisites
 
 printf "\n${DIM}Scanning machine for existing setup...${X}\n"
+set +e            # best-effort detection + Detected summary: failing probes and
+                  # the &&/|| report lines must not abort setup under errexit
 scan_machine
 
 section "Detected"
@@ -211,7 +213,7 @@ section "Detected"
 [ -n "${DET_AWS_PROFILES:-}" ] && ok "AWS profiles: $(echo $DET_AWS_PROFILES | wc -w | tr -d ' ') found" || { [ -n "${WANT_AWS:-}" ] && skip "no AWS profiles"; }
 [ "${DET_SSH_ALIASES:-0}" -gt 0 ] && ok "SSH github aliases present"      || skip "no SSH github aliases"
 printf "${DIM}  (scan is read-only; nothing changed. Detected values are used as defaults below.)${X}\n"
-set -e  # back to strict for the write phases
+set -e  # end of read-only phase; strict again for all write phases below
 
 printf "\n${DIM}Answer per component; skip anything you don't use. Nothing is overwritten without a backup.${X}\n"
 
