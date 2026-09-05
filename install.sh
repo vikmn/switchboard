@@ -389,20 +389,21 @@ elif ask "Append the github.com-work / github.com-personal aliases to ~/.ssh/con
 else
   skip "SSH aliases (template at $DIR/ssh/ssh-config.example)"
 fi
-
-# ── 7. pre-commit lint hook (for hacking on switchboard itself) ──────────────
-section "7. Pre-commit shellcheck hook (optional)"
+# ── 7. pre-commit hook (CONTRIBUTORS ONLY — not part of user setup) ──────────
+# Only relevant if you're editing switchboard itself; a normal user setting up
+# their machine can ignore this (it no-ops unless run from the repo clone).
+section "7. Pre-commit hook (contributors only)"
 if [ -d "$DIR/.git" ] && [ -f "$DIR/hooks/pre-commit" ]; then
-  if ask "Enable the shellcheck pre-commit hook in the switchboard repo?" n; then
+  if ask "Editing switchboard itself? Enable the pre-commit hook (leak scan + shellcheck)?" n; then
     chmod +x "$DIR/hooks/pre-commit"
     git -C "$DIR" config core.hooksPath hooks
-    ok "hooks path set — install.sh/uninstall.sh get shellchecked on commit"
-    have shellcheck || warn "shellcheck not installed (brew install shellcheck); hook will skip until it is"
+    ok "hooks path set — staged changes are leak-scanned and installers shellchecked on commit"
+    have shellcheck || warn "shellcheck not installed (brew install shellcheck); lint will skip until it is"
   else
     skip "pre-commit hook"
   fi
 else
-  skip "not the switchboard git repo — pre-commit hook n/a"
+  skip "not the switchboard git repo — contributor hook n/a"
 fi
 
 section "Done"
