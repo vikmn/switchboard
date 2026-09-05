@@ -2,6 +2,10 @@
 # install.sh — interactive switchboard setup. Asks about each component so you
 # can skip the parts you don't use (e.g. no GCP, no work identity). Safe:
 # backs up before overwriting and confirms on anything destructive.
+#
+# shellcheck disable=SC2059  # printf format uses fixed colour-code vars, no user data
+# shellcheck disable=SC2015  # `[ x ] && ok || skip` — ok/skip are printfs that don't fail
+# shellcheck disable=SC2034  # some DET_*/WANT_* are captured for readability/future use
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,7 +13,7 @@ CONFIG_HOME="$HOME/.config/switchboard"
 TS="$(date +%Y%m%d-%H%M%S)"
 
 # ── ui helpers ───────────────────────────────────────────────────────────────
-B=$'\033[1m'; DIM=$'\033[2m'; G=$'\033[32m'; Y=$'\033[33m'; R=$'\033[31m'; X=$'\033[0m'
+B=$'\033[1m'; DIM=$'\033[2m'; G=$'\033[32m'; Y=$'\033[33m'; X=$'\033[0m'
 section() { printf "\n${B}%s${X}\n" "$*"; }
 ok()      { printf "  ${G}✓${X} %s\n" "$*"; }
 skip()    { printf "  ${DIM}– %s${X}\n" "$*"; }
@@ -129,7 +133,8 @@ want_tool() {
   fi
   printf "  ${Y}!${X} %s ${DIM}(not installed)${X}\n" "$label" >/dev/tty
   if ask "  install via Homebrew now?" n; then
-    if brew_install "$pkg" $cask >/dev/tty 2>&1; then
+    # shellcheck disable=SC2086  # $cask must word-split to pass --cask as a separate arg
+  if brew_install "$pkg" $cask >/dev/tty 2>&1; then
       have "$cmd" && { echo yes; return; }
       warn "install attempted but $cmd still not found" >/dev/tty
     fi
@@ -210,7 +215,7 @@ section "Detected"
 [ -n "$DET_INCLUDES" ]    && ok "includeIf roots: $DET_INCLUDES"          || skip "no includeIf rules"
 [ -n "${DET_GPG_KEYS:-}" ] && ok "GPG keys: ${DET_GPG_KEYS}"              || { [ -n "${WANT_GPG:-}" ] && skip "no GPG secret keys"; }
 [ -n "${DET_GCLOUD_CFGS:-}" ] && ok "gcloud configs: ${DET_GCLOUD_CFGS}"  || { [ -n "${WANT_GCP:-}" ] && skip "no gcloud configs"; }
-[ -n "${DET_AWS_PROFILES:-}" ] && ok "AWS profiles: $(echo $DET_AWS_PROFILES | wc -w | tr -d ' ') found" || { [ -n "${WANT_AWS:-}" ] && skip "no AWS profiles"; }
+[ -n "${DET_AWS_PROFILES:-}" ] && ok "AWS profiles: $(echo "$DET_AWS_PROFILES" | wc -w | tr -d ' ') found" || { [ -n "${WANT_AWS:-}" ] && skip "no AWS profiles"; }
 [ "${DET_SSH_ALIASES:-0}" -gt 0 ] && ok "SSH github aliases present"      || skip "no SSH github aliases"
 printf "${DIM}  (scan is read-only; nothing changed. Detected values are used as defaults below.)${X}\n"
 set -e  # end of read-only phase; strict again for all write phases below
@@ -220,6 +225,7 @@ printf "\n${DIM}Answer per component; skip anything you don't use. Nothing is ov
 # ── 1. shell loader (always; it's the point) ─────────────────────────────────
 section "1. Shell loader (~/.zshrc)"
 if grep -q "switchboard/shell/switchboard.zsh" "$HOME/.zshrc" 2>/dev/null; then
+  # shellcheck disable=SC2088  # literal ~ in a display message, not a path
   skip "~/.zshrc already sources switchboard"
 elif ask "Add the switchboard source line to ~/.zshrc?" y; then
   printf '\n# switchboard: cloud/identity context helpers\nsource %s/shell/switchboard.zsh\n' "$DIR" >> "$HOME/.zshrc"
@@ -236,7 +242,7 @@ section "1b. Migrate inline definitions"
 zrc="$HOME/.zshrc"
 _sb_found=""
 for fn in $SB_MANAGED_FUNCS; do
-  grep -qE "^(function[ \t]+)?$fn[ \t]*(\(\))?[ \t]*\{" "$zrc" 2>/dev/null && \
+  grep -qE "^(function[ \t]+)?${fn}[ \t]*(\(\))?[ \t]*\{" "$zrc" 2>/dev/null && \
     ! grep -qE "^# \[switchboard-migrated\] $fn " "$zrc" 2>/dev/null && _sb_found="$_sb_found $fn"
 done
 for al in $SB_MANAGED_ALIASES; do
@@ -245,7 +251,7 @@ done
 
 if [ -z "$_sb_found" ]; then
   skip "no inline switchboard definitions found"
-elif ask "Found inline definitions ($(echo $_sb_found | tr ' ' ',')). Comment them out so the repo is the source?" y; then
+elif ask "Found inline definitions ($(echo "$_sb_found" | tr ' ' ',')). Comment them out so the repo is the source?" y; then
   backup "$zrc"
   for item in $_sb_found; do
     tmp="$(mktemp)"
@@ -382,6 +388,21 @@ elif ask "Append the github.com-work / github.com-personal aliases to ~/.ssh/con
   ok "appended aliases — edit the IdentityFile paths in ~/.ssh/config"
 else
   skip "SSH aliases (template at $DIR/ssh/ssh-config.example)"
+fi
+
+# ── 7. pre-commit lint hook (for hacking on switchboard itself) ──────────────
+section "7. Pre-commit shellcheck hook (optional)"
+if [ -d "$DIR/.git" ] && [ -f "$DIR/hooks/pre-commit" ]; then
+  if ask "Enable the shellcheck pre-commit hook in the switchboard repo?" n; then
+    chmod +x "$DIR/hooks/pre-commit"
+    git -C "$DIR" config core.hooksPath hooks
+    ok "hooks path set — install.sh/uninstall.sh get shellchecked on commit"
+    have shellcheck || warn "shellcheck not installed (brew install shellcheck); hook will skip until it is"
+  else
+    skip "pre-commit hook"
+  fi
+else
+  skip "not the switchboard git repo — pre-commit hook n/a"
 fi
 
 section "Done"

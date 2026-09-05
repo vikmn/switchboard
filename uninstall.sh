@@ -4,6 +4,8 @@
 # original ~/.zshrc definitions come back), backing up first. It does NOT delete
 # your identity files, keys, or .envrc data — those are yours; it only prints
 # what's left so you can remove them manually if you want.
+#
+# shellcheck disable=SC2059  # printf format uses fixed colour-code vars, no user data
 set -euo pipefail
 
 TS="$(date +%Y%m%d-%H%M%S)"

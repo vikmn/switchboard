@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# pre-commit — guard commits with two checks:
+#   1. secret/leak scan on staged content (high-confidence patterns)
+#   2. shellcheck on staged bash installers
+# Wired via `git config core.hooksPath hooks` (done by install.sh, or run it
+# yourself). Bypass in an emergency with `git commit --no-verify`.
+set -euo pipefail
+
+fail=0
+
+# ── 1. leak scan: refuse obvious secrets in staged content ───────────────────
+# High-confidence patterns only, to avoid false-positive fatigue. Scans the
+# staged diff (added lines) rather than the whole tree.
+added=$(git diff --cached --no-color | grep '^+' | grep -v '^+++' || true)
+if [ -n "$added" ]; then
+  leak=$(printf '%s\n' "$added" | grep -nEi \
+    -e 'AKIA[0-9A-Z]{16}' \
+    -e '-----BEGIN [A-Z ]*PRIVATE KEY-----' \
+    -e '(aws_)?secret_access_key[[:space:]]*=[[:space:]]*[A-Za-z0-9/+]{20,}' \
+    -e '(api[_-]?key|token|passwd|password)[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9._-]{16,}' \
+    -e 'xox[baprs]-[0-9A-Za-z-]{10,}' \
+    -e 'gh[pousr]_[A-Za-z0-9]{20,}' \
+    || true)
+  if [ -n "$leak" ]; then
+    echo "pre-commit: possible secret in staged changes —"
+    printf '  %s\n' "$leak"
+    echo "pre-commit: refusing commit. Remove it, or bypass with --no-verify if it's a false positive."
+    fail=1
+  fi
+fi
+
+# ── 2. shellcheck the staged bash installers ─────────────────────────────────
+# Only install.sh / uninstall.sh are linted; the shell/*.zsh files use zsh-only
+# syntax (compdef, autoload, $'...') that shellcheck can't parse.
+if command -v shellcheck >/dev/null 2>&1; then
+  staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(install|uninstall)\.sh$' || true)
+  if [ -n "$staged" ]; then
+    echo "pre-commit: shellcheck $staged"
+    # shellcheck disable=SC2086  # word-splitting is intended for the file list
+    shellcheck --shell=bash $staged || { echo "pre-commit: shellcheck failed."; fail=1; }
+  fi
+else
+  echo "pre-commit: shellcheck not installed — skipping lint (brew install shellcheck)"
+fi
+
+[ "$fail" -ne 0 ] && exit 1
+exit 0
