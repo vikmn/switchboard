@@ -280,6 +280,13 @@ else
 fi
 
 section "Done"
+# persist the agreed toolset so my-commands reflects what was set up
+mkdir -p "$CONFIG_HOME"
+{
+  echo "# written by switchboard install.sh — the toolset you opted into"
+  echo "export SWITCHBOARD_TOOLS=\"${WANT_DIRENV:+direnv }${WANT_GH:+gh }${WANT_AWS:+aws }${WANT_GCP:+gcloud }${WANT_GPG:+gpg }\""
+} > "$CONFIG_HOME/toolset.zsh"
+ok "recorded toolset -> $CONFIG_HOME/toolset.zsh"
 printf "  Toolset: %s%s%s%s%s\n" "${WANT_DIRENV:+direnv }" "${WANT_GH:+gh }" "${WANT_AWS:+aws }" "${WANT_GCP:+gcloud }" "${WANT_GPG:+gpg }"
 printf "  Reload your shell: ${B}source ~/.zshrc${X}\n"
 printf "  Then run: ${B}my-commands${X}  and  ${B}whereami${X}\n"

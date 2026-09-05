@@ -21,16 +21,24 @@ fi
 # machine-local overrides (org profiles, extra aliases) — not committed
 [ -f "$HOME/.config/switchboard/local.zsh" ] && source "$HOME/.config/switchboard/local.zsh"
 
-# cheatsheet
+# agreed toolset recorded by install.sh (sets SWITCHBOARD_TOOLS) — not committed
+[ -f "$HOME/.config/switchboard/toolset.zsh" ] && source "$HOME/.config/switchboard/toolset.zsh"
+
+# cheatsheet — shows only the sections for tools in your toolset.
+# If SWITCHBOARD_TOOLS is unset (repo sourced without running install.sh),
+# it falls back to showing everything.
 function my-commands {
+  local tools="${SWITCHBOARD_TOOLS:-direnv gh aws gcloud gpg}"
+  _sb_has() { [[ " $tools " == *" $1 "* ]]; }
   echo "🛠️  Switchboard commands:"
   echo ""
-  echo "📋 AWS:    aws-login <profile> · aws-status · aws-profiles"
-  echo "☁️  GCP:    gcp-login · gcp-status · gcp-switch <config> (Tab)"
-  echo "🐙 GitHub: gh-login · gh-status"
+  _sb_has aws    && echo "📋 AWS:    aws-login <profile> · aws-status · aws-profiles"
+  _sb_has gcloud && echo "☁️  GCP:    gcp-login · gcp-status · gcp-switch <config> (Tab)"
+  _sb_has gh     && echo "🐙 GitHub: gh-login · gh-status"
   echo "🔐 All:    login-all [aws-profile] · auth-status"
   echo "📍 Context: env-status / whereami   (● active / ○ expired, per shell)"
   echo ""
   echo "Identity & cloud switch automatically by directory via .envrc + git includeIf."
   echo "See: $SWITCHBOARD_DIR/README.md"
+  unfunction _sb_has
 }

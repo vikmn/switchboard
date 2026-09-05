@@ -1,5 +1,6 @@
 # Never commit machine-local overrides or secrets, even if placed in-repo.
 local.zsh
+toolset.zsh
 *.local
 .DS_Store
 *.bak-*
