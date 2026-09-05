@@ -1,12 +1,6 @@
 <div align="center">
 
-```
-   ┌─────────────────────────────────────────┐
-   │  ○─┐   ┌─●   s w i t c h b o a r d        │
-   │    │ ╳ │     ─────────────────────        │
-   │  ●─┘   └─○   identity & cloud, by dir     │
-   └─────────────────────────────────────────┘
-```
+<img src="assets/switchboard-logo.svg" alt="switchboard" width="220">
 
 ![platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 ![shell](https://img.shields.io/badge/shell-zsh-89e051)

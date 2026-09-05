@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="100%" height="100%">
+  <!-- Terminal Charcoal Background -->
+  <rect width="256" height="256" fill="#1e1e2e"/>
+
+  <!-- Inactive Jacks Field (4x4 Patch Bay) -->
+  <circle cx="112" cy="50" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="112" cy="50" r="2" fill="#363a4f"/>
+  <circle cx="144" cy="50" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="144" cy="50" r="2" fill="#363a4f"/>
+  <circle cx="80" cy="82" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="80" cy="82" r="2" fill="#363a4f"/>
+  <circle cx="112" cy="82" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="112" cy="82" r="2" fill="#363a4f"/>
+  <circle cx="144" cy="82" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="144" cy="82" r="2" fill="#363a4f"/>
+  <circle cx="176" cy="82" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="176" cy="82" r="2" fill="#363a4f"/>
+  <circle cx="80" cy="114" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="80" cy="114" r="2" fill="#363a4f"/>
+  <circle cx="112" cy="114" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="112" cy="114" r="2" fill="#363a4f"/>
+  <circle cx="144" cy="114" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="144" cy="114" r="2" fill="#363a4f"/>
+  <circle cx="176" cy="114" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="176" cy="114" r="2" fill="#363a4f"/>
+  <circle cx="112" cy="146" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="112" cy="146" r="2" fill="#363a4f"/>
+  <circle cx="144" cy="146" r="6.5" stroke="#363a4f" stroke-width="2" fill="#24273a"/>
+  <circle cx="144" cy="146" r="2" fill="#363a4f"/>
+
+  <!-- Amber Cable (BL to TR, underlying path) -->
+  <line x1="80" y1="146" x2="176" y2="50" stroke="#ffb454" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Schematic Bridge / Cable Crossover Gap -->
+  <circle cx="128" cy="98" r="5.5" fill="#1e1e2e"/>
+
+  <!-- Glowing Green Cable (TL to BR, crossing over) -->
+  <line x1="80" y1="50" x2="176" y2="146" stroke="#00ff9f" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Active Patched Jacks -->
+  <!-- Top-Left & Bottom-Right: Glowing Green -->
+  <circle cx="80" cy="50" r="6.5" stroke="#00ff9f" stroke-width="2" fill="#1e1e2e"/>
+  <circle cx="80" cy="50" r="2.5" fill="#00ff9f"/>
+  <circle cx="176" cy="146" r="6.5" stroke="#00ff9f" stroke-width="2" fill="#1e1e2e"/>
+  <circle cx="176" cy="146" r="2.5" fill="#00ff9f"/>
+
+  <!-- Bottom-Left & Top-Right: Amber -->
+  <circle cx="80" cy="146" r="6.5" stroke="#ffb454" stroke-width="2" fill="#1e1e2e"/>
+  <circle cx="80" cy="146" r="2.5" fill="#ffb454"/>
+  <circle cx="176" cy="50" r="6.5" stroke="#ffb454" stroke-width="2" fill="#1e1e2e"/>
+  <circle cx="176" cy="50" r="2.5" fill="#ffb454"/>
+
+  <!-- Monospace Wordmark -->
+  <text x="128" y="204" font-family="ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="15.5" font-weight="500" letter-spacing="0.22em" fill="#cdd6f4" text-anchor="middle">switchboard</text>
+</svg>
