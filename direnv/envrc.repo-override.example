@@ -1,0 +1,7 @@
+# envrc.repo-override.example — per-repo override, e.g. ~/code/<org>/<repo>/.envrc
+#
+# Use when a single repo needs a different AWS profile than the work default,
+# while keeping the inherited gcloud config.
+
+source_up                                    # inherit gcloud (and anything else) from the work root
+export AWS_PROFILE=<repo-specific-profile>   # narrow AWS to this repo's account

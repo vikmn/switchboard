@@ -1,0 +1,12 @@
+# envrc.work.example — drop at your WORK code root, e.g. ~/code/<org>/.envrc
+#
+#   cp direnv/envrc.work.example ~/code/<org>/.envrc && direnv allow ~/code/<org>
+#
+# Overrides the personal config from the parent ~/code/.envrc to the work
+# gcloud configuration and a default work AWS profile.
+
+export CLOUDSDK_ACTIVE_CONFIG_NAME=work
+
+# Default AWS profile for work repos. Individual repos can override this in
+# their own .envrc (use `source_up` there to inherit gcloud from here).
+export AWS_PROFILE=<work-default-profile>

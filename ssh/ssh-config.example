@@ -1,0 +1,29 @@
+# ssh-config.example — GitHub host aliases for work/personal separation.
+# Append to ~/.ssh/config and set the IdentityFile paths.
+#
+# If you use ONE GitHub account for both work and personal repos, point all
+# aliases at the same key today. Keeping separate aliases means that when you
+# later need a true split (e.g. losing work access), you only swap one
+# IdentityFile line instead of re-pointing every repo's remote.
+#
+# Remotes then use:  git@github.com-work:ORG/repo.git
+#                    git@github.com-personal:you/repo.git
+
+Host github.com-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes
+
+Host github.com-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+
+# Default direct github.com access
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes

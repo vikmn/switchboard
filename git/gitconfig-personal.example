@@ -1,0 +1,13 @@
+# gitconfig-personal.example — personal identity include.
+# Copy to ~/.gitconfig-personal and fill in.
+#
+#   cp git/gitconfig-personal.example ~/.gitconfig-personal
+
+[user]
+	name = YOUR NAME
+	email = you@personal.example
+	signingkey = YOUR_PERSONAL_GPG_KEY_ID
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true

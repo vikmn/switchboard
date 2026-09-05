@@ -1,0 +1,13 @@
+# gitconfig-work.example — work identity include.
+# Copy to ~/.gitconfig-work and fill in.
+#
+#   cp git/gitconfig-work.example ~/.gitconfig-work
+
+[user]
+	name = YOUR NAME
+	email = you@work.example
+	signingkey = YOUR_WORK_GPG_KEY_ID
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true

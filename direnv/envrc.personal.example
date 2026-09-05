@@ -1,0 +1,11 @@
+# envrc.personal.example — drop at your PERSONAL code root, e.g. ~/code/.envrc
+#
+#   cp direnv/envrc.personal.example ~/code/.envrc && direnv allow ~/code
+#
+# Selects the personal gcloud configuration for anything under this directory.
+# A nested work root has its own .envrc that overrides this (see envrc.work.example).
+
+export CLOUDSDK_ACTIVE_CONFIG_NAME=personal
+
+# Optional: a personal AWS profile
+# export AWS_PROFILE=<personal-profile>

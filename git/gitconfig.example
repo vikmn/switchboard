@@ -1,0 +1,45 @@
+# gitconfig.example — base git config with directory-based identity switching.
+# Copy to ~/.gitconfig and edit the personal [user] block + the includeIf paths.
+#
+#   cp git/gitconfig.example ~/.gitconfig
+#
+# How identity switching works:
+#   - The [user] block below is the DEFAULT identity (personal).
+#   - includeIf "gitdir:<path>/" layers a different identity for repos under
+#     that path. A trailing "/" matches at any depth.
+#   - Rules are last-match-wins, so put the more specific (work) rule AFTER the
+#     broader (personal) one.
+#
+# This mirrors the direnv cloud-config setup: ~/code is personal, and a nested
+# work root (e.g. ~/code/<org>) overrides to the work identity.
+
+[user]
+	name = YOUR NAME
+	email = you@personal.example
+	signingkey = YOUR_PERSONAL_GPG_KEY_ID
+
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+[gpg]
+	program = /opt/homebrew/bin/gpg   ; Apple Silicon Homebrew; adjust on Intel/Linux
+
+[core]
+	excludesfile = ~/.gitignore_global
+
+# ── Directory-based identity ─────────────────────────────────────────────────
+# Personal everywhere under ~/code ...
+[includeIf "gitdir:~/code/"]
+	path = ~/.gitconfig-personal
+# ... except the work root, which overrides to work (must come AFTER personal).
+[includeIf "gitdir:~/code/<ORG>/"]
+	path = ~/.gitconfig-work
+
+[alias]
+	st = status
+	br = branch
+	co = checkout
+	lg = log --oneline --decorate --graph --all
+	last = log -1 HEAD
+	unstage = reset HEAD --

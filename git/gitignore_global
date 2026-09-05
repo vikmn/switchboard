@@ -1,0 +1,6 @@
+# gitignore_global — patterns ignored across all repos.
+# Wired via git core.excludesfile (see gitconfig.example).
+.envrc
+.DS_Store
+*.local
+.direnv/

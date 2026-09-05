@@ -1,0 +1,26 @@
+# local.zsh.example — copy to ~/.config/switchboard/local.zsh and fill in.
+# This file holds MACHINE / ORG specific values. It is NOT committed.
+#
+#   cp shell/local.zsh.example ~/.config/switchboard/local.zsh
+#
+# Everything here is optional; delete what you don't need.
+
+# ── Org-specific profile dispatchers ─────────────────────────────────────────
+# Example: a helper that maps short env names to full AWS SSO profiles for a
+# given org. Mirrors the generic aws-login but with your org's naming.
+#
+# seller() {
+#   local env="$1"
+#   case "$env" in
+#     dev|stage|prod) aws-login "myorg-${env}.Developer" ;;
+#     *) echo "usage: seller <dev|stage|prod>"; return 1 ;;
+#   esac
+# }
+# _seller_completions() { compadd dev stage prod }
+# compdef _seller_completions seller 2>/dev/null
+
+# ── Extra tool aliases specific to this machine ──────────────────────────────
+# alias mw="node ~/code/<org>/<cli>/dist/app/index.js"
+
+# ── Default AWS profile fallback for login-all ───────────────────────────────
+# export SWITCHBOARD_DEFAULT_AWS_PROFILE="my-default.Developer"
