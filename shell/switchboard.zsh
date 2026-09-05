@@ -37,6 +37,12 @@ function my-commands {
   _sb_has gh     && echo "🐙 GitHub: gh-login · gh-status"
   echo "🔐 All:    login-all [aws-profile] · auth-status"
   echo "📍 Context: env-status / whereami   (● active / ○ expired, per shell)"
+  # personal/machine-specific commands can extend this list by defining
+  # my-commands-local in ~/.config/switchboard/local.zsh
+  if typeset -f my-commands-local >/dev/null; then
+    echo ""
+    my-commands-local
+  fi
   echo ""
   echo "Identity & cloud switch automatically by directory via .envrc + git includeIf."
   echo "See: $SWITCHBOARD_DIR/README.md"

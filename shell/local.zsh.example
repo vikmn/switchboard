@@ -24,3 +24,11 @@
 
 # ── Default AWS profile fallback for login-all ───────────────────────────────
 # export SWITCHBOARD_DEFAULT_AWS_PROFILE="my-default.Developer"
+
+# ── Extend the my-commands cheatsheet with your personal commands ────────────
+# Define my-commands-local and it will be appended to `my-commands` output.
+#
+# my-commands-local() {
+#   echo "🔧 Personal:"
+#   echo "   my-tool <arg>   - what it does"
+# }
