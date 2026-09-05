@@ -1,53 +1,33 @@
 # Contributing to switchboard
 
-Thanks for your interest. Contributions are welcome via pull request.
+switchboard is a personal setup published so others can read, fork, and adapt
+it. **The best way to contribute is by opening an issue** — report a bug, or
+suggest an idea. The maintainer makes the changes; code is not accepted via pull
+request.
 
-## Workflow
+## Found a bug or have an idea?
 
-1. **Fork** the repo and clone your fork.
-2. Create a branch: `git checkout -b my-change`.
-3. Make your change. Keep it focused; one concern per PR.
-4. **Enable the pre-commit hook** (see below) so your commits are checked.
-5. Push to your fork and **open a pull request** against `main`.
+[Open an issue](https://github.com/vikmn/switchboard/issues/new) with:
 
-`main` is protected: direct pushes are blocked, and every PR needs a review
-approval before it can merge. The maintainer reviews and merges — so opening a
-PR is the only path in, for everyone.
+- what you expected vs. what happened;
+- your macOS and zsh versions;
+- the relevant `install.sh` / command output (**redact any secrets** — emails,
+  keys, account IDs).
 
-## Pre-commit hook
+## Want your own version?
 
-If you're editing switchboard, enable the hook so commits are checked
-automatically:
+Fork it and make it yours — that's encouraged. The repo is generic on purpose:
+identity values, org profiles, and `.envrc` data all live in your local layer
+(`~/.config/switchboard/local.zsh`, `~/.gitconfig*`), never in the repo. So a
+fork is yours to tweak without carrying anyone else's specifics.
+
+If you're hacking on your fork, enable the pre-commit hook to catch mistakes:
 
 ```bash
 git config core.hooksPath hooks     # install.sh also offers to do this
 brew install shellcheck             # optional; the hook skips lint if absent
 ```
 
-On each commit it:
-- **leak-scans** the staged diff for high-confidence secrets (AWS keys,
-  private-key blocks, GitHub tokens, `api_key`/`token`/`password` assignments)
-  and refuses the commit if any match;
-- **shellchecks** staged `install.sh` / `uninstall.sh`.
-
-Bypass a genuine false positive with `git commit --no-verify`. The hook is
-contributor tooling only — it plays no part in what switchboard sets up on a
-user's machine.
-
-## Style & scope
-
-- Keep the repo **generic**: no personal emails, GPG key IDs, org names,
-  account numbers, or org-specific profiles in committed files. Machine/org
-  specifics live in `~/.config/switchboard/local.zsh` (see `local.zsh.example`).
-- **Shell**: helpers are zsh (`shell/*.zsh`); the installers are bash and are
-  shellchecked. Match the existing style; prefer `printf` over `echo` for
-  anything with escapes.
-- **Safety**: anything that writes to a user's dotfiles must back up first and
-  confirm before overwriting — follow the pattern in `install.sh`.
-- Platform is **macOS + zsh + Homebrew**; don't add hard dependencies on tools
-  outside that without discussion.
-
-## Reporting issues
-
-Open an issue describing what you expected vs. what happened, your macOS/zsh
-versions, and the relevant `install.sh` / command output (redact any secrets).
+It leak-scans staged changes (AWS keys, private-key blocks, tokens,
+`api_key`/`token`/`password` assignments) and shellchecks `install.sh` /
+`uninstall.sh`. Bypass a false positive with `git commit --no-verify`.

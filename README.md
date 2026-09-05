@@ -90,7 +90,7 @@ export SWITCHBOARD_PROD_PATTERN='prod|Production|live'
 
 ## Contributing
 
-PRs welcome — `main` is protected, so fork → branch → PR. See [CONTRIBUTING.md](CONTRIBUTING.md).
+This is a personal setup. Bugs and ideas are welcome as [issues](https://github.com/vikmn/switchboard/issues) — the maintainer makes changes; code isn't taken via PR. Fork it freely to make your own version. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## One account, two SSH aliases?
 
