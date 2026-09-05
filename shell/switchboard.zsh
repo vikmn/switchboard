@@ -7,11 +7,14 @@
 
 SWITCHBOARD_DIR="${SWITCHBOARD_DIR:-$HOME/code/switchboard}"
 
-# completion system (needed for the compdef lines in cloud.zsh)
+# completion system (needed for the compdef lines in lib/gcp.zsh)
 autoload -Uz compinit && compinit -C 2>/dev/null
 
-# generic helpers
-source "$SWITCHBOARD_DIR/shell/cloud.zsh"
+# generic helpers — per-service libs, then the cross-service views that use them
+for _sb_lib in aws gcp github views; do
+  source "$SWITCHBOARD_DIR/shell/lib/$_sb_lib.zsh"
+done
+unset _sb_lib
 
 # direnv hook (per-directory cloud config / AWS profile / etc.)
 if command -v direnv >/dev/null 2>&1; then
