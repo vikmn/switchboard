@@ -135,8 +135,13 @@ pkg_install() {
   case "$PKG_MGR:$key" in
     brew:direnv|apt:direnv|dnf:direnv|pacman:direnv|zypper:direnv) pkg=direnv ;;
     brew:gh)     pkg=gh ;;
-    apt:gh|dnf:gh|zypper:gh) pkg=gh ;;      # requires the GitHub CLI repo on some distros
+    zypper:gh)   pkg=gh ;;
     pacman:gh)   pkg=github-cli ;;
+    apt:gh|dnf:gh)
+      # gh is not in default Ubuntu/Debian/Fedora repos — needs GitHub's repo added first.
+      warn "GitHub CLI isn't in default $PKG_MGR repos. Add GitHub's repo then install:" >/dev/tty
+      warn "  https://github.com/cli/cli/blob/trunk/docs/install_linux.md" >/dev/tty
+      return 1 ;;
     brew:aws)    pkg=awscli ;;
     apt:aws|dnf:aws|zypper:aws) pkg=awscli ;;
     pacman:aws)  pkg=aws-cli-v2 ;;
