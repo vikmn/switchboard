@@ -62,6 +62,9 @@ _sb_ensure_key() {
   if have gh && ask "  upload the public key to GitHub (gh gpg-key add)?" y; then
     gpg --armor --export "$newkey" | gh gpg-key add - >/dev/tty 2>&1 && ok "uploaded to GitHub" >/dev/tty \
       || warn "gh upload failed — add it manually: gpg --armor --export $newkey" >/dev/tty
+  else
+    warn "add this key to GitHub for verified commits: gpg --armor --export $newkey | pbcopy" >/dev/tty
+    warn "then paste at https://github.com/settings/gpg/new" >/dev/tty
   fi
   echo "$newkey"
 }
