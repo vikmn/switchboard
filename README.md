@@ -1,3 +1,19 @@
+<div align="center">
+
+```
+   ┌─────────────────────────────────────────┐
+   │  ○─┐   ┌─●   s w i t c h b o a r d        │
+   │    │ ╳ │     ─────────────────────        │
+   │  ●─┘   └─○   identity & cloud, by dir     │
+   └─────────────────────────────────────────┘
+```
+
+![platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![shell](https://img.shields.io/badge/shell-zsh-89e051)
+![requires](https://img.shields.io/badge/requires-git-f34f29)
+
+</div>
+
 # switchboard
 
 Your terminal, wired so **identity and cloud context follow the directory you're in.** `cd` into a work repo and your git author, GPG signing key, gcloud config, and AWS profile are all work; `cd` into a personal project and they're all personal. No manual switching, no wrong-identity commits.
