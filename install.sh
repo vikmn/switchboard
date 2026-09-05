@@ -63,7 +63,7 @@ _sb_ensure_key() {
   if [ -z "$newkey" ]; then warn "key generation failed for $email" >/dev/tty; return; fi
   ok "generated GPG key $newkey for $email" >/dev/tty
 
-  if have gh && ask "  upload the public key to GitHub (gh gpg-key add)?" y; then
+  if have gh && gh auth status >/dev/null 2>&1 && ask "  upload the public key to GitHub (gh gpg-key add)?" y; then
     gpg --armor --export "$newkey" | gh gpg-key add - >/dev/tty 2>&1 && ok "uploaded to GitHub" >/dev/tty \
       || warn "gh upload failed — add it manually: gpg --armor --export $newkey" >/dev/tty
   else
