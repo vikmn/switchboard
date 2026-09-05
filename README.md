@@ -73,7 +73,7 @@ Generic in the repo; identifying/machine-specific stays out of git:
 ## Layout
 
 ```
-shell/      switchboard.zsh (loader) · cloud.zsh (helpers) · local.zsh.example
+shell/      switchboard.zsh (loader) · lib/{aws,gcp,github,views}.zsh · local.zsh.example
 git/        gitconfig[.example] + personal/work includes + gitignore_global
 direnv/     envrc.{personal,work,repo-override}.example
 ssh/        ssh-config.example
