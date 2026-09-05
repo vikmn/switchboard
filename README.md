@@ -1,79 +1,84 @@
 # switchboard
 
-Per-directory identity and cloud-context switching for a dev machine, plus AWS/GCP/GitHub auth helpers. Clone this on a new machine and you get the same setup: git identity, gcloud config, and AWS profile all switch automatically based on which directory you're in.
+Your terminal, wired so **identity and cloud context follow the directory you're in.** `cd` into a work repo and your git author, GPG signing key, gcloud config, and AWS profile are all work; `cd` into a personal project and they're all personal. No manual switching, no wrong-identity commits.
 
-## The model
+Clone it on a new machine, run one guided installer, and you get the same setup everywhere.
 
-One idea, applied three ways, all keyed off the directory you're in:
+## Why
 
-| Layer | Mechanism | Personal (`~/code/`) | Work (`~/code/<org>/`) |
+Juggling personal and work accounts on one machine is error-prone: commits signed with the wrong key, `terraform apply` against the wrong AWS account, `gcloud` pointed at the wrong project. switchboard removes the manual step. It keys everything off the directory:
+
+| Layer | Mechanism | `~/code/` (personal) | `~/code/<org>/` (work) |
 |-------|-----------|----------------------|------------------------|
-| Git commit identity | `includeIf "gitdir:..."` in `~/.gitconfig` | personal email + GPG key | work email + GPG key |
-| gcloud config | `CLOUDSDK_ACTIVE_CONFIG_NAME` via direnv `.envrc` | `personal` config | `work` config |
-| AWS profile | `AWS_PROFILE` via direnv `.envrc` | (personal/none) | work default; repos can override |
+| Git commit identity | `includeIf` in `~/.gitconfig` | personal email + GPG key | work email + GPG key |
+| gcloud config | `CLOUDSDK_ACTIVE_CONFIG_NAME` via direnv | `personal` | `work` |
+| AWS profile | `AWS_PROFILE` via direnv | (personal/none) | work default; per-repo overrides |
 
-The seam is directory-based, so nothing needs manual switching. `cd` into a work repo and your commits, gcloud, and AWS profile are all work; `cd` into a personal project and they're all personal.
+Plus auth helpers (`aws-login`, `gcp-switch`, `whereami`, ...) and a `my-commands` cheatsheet that lists only the tools you actually use.
 
-## What's in here
+## Quick start
 
-```
-shell/
-  switchboard.zsh          entrypoint (source from ~/.zshrc)
-  cloud.zsh                aws-login, gcp-*, gh-*, auth-status, env-status/whereami
-  local.zsh.example        machine/org-specific overrides (copy, don't commit)
-git/
-  gitconfig.example        base + directory includeIf rules
-  gitconfig-personal.example
-  gitconfig-work.example
-  gitignore_global         ignores .envrc, .DS_Store, etc.
-direnv/
-  envrc.personal.example   ~/code/.envrc
-  envrc.work.example       ~/code/<org>/.envrc
-  envrc.repo-override.example
-ssh/
-  ssh-config.example       github.com-work / github.com-personal aliases
-install.sh                 idempotent, non-destructive bootstrap
-```
+**Only prerequisite: `git`.** Everything else (direnv, gh, aws, gcloud, gpg, jq) is optional and the installer offers to install each one via Homebrew if you want it.
 
-## Setup on a new machine
-
-Prerequisites:
 ```bash
-brew install direnv gh awscli jq
-# + Google Cloud SDK (gcloud)
+git clone git@github.com:<you>/switchboard.git ~/code/switchboard
+~/code/switchboard/install.sh
 ```
+
+The installer is interactive and idempotent. It walks you through:
+
+1. **Prerequisites** — for each tool, shows whether it's installed and asks if switchboard should use it. Missing ones can be installed via Homebrew on the spot. Your answers become the "toolset" that gates the rest.
+2. **Scan** — reads your existing config (git identity, GPG keys, gcloud configs, AWS profiles, SSH aliases) and uses it as prefilled defaults, so re-running on a set-up machine is mostly pressing Enter.
+3. **Shell loader + migration** — sources the repo from `~/.zshrc`, and if you already have these functions defined inline, comments them out so the repo is the single source (backs up first).
+4. **Git identity** — writes `~/.gitconfig-personal` / `-work` and the directory `includeIf` rules (won't clobber an existing `~/.gitconfig` without asking).
+5. **direnv `.envrc`s** — drops per-directory gcloud/AWS config at your personal and work roots.
+6. **SSH aliases** — optional `github.com-work` / `github.com-personal` host entries.
 
 Then:
-```bash
-git clone git@github.com-personal:<you>/switchboard.git ~/code/switchboard
-~/code/switchboard/install.sh          # wires the shell loader + prints next steps
-```
 
-The installer is deliberately conservative: it adds the shell `source` line, installs the global gitignore, creates `~/.config/switchboard/local.zsh`, and then **prints** the git/SSH/direnv steps rather than auto-writing identity files (so it never clobbers real secrets). Follow the printed steps to fill in your name/email/GPG key IDs and drop the `.envrc` files.
-
-Finally:
 ```bash
 source ~/.zshrc
-my-commands        # cheatsheet
-whereami           # show the active context
+my-commands     # cheatsheet (only your toolset's commands)
+whereami        # active context for this shell
 ```
+
+Nothing is overwritten without a timestamped backup.
 
 ## Commands
 
 - `aws-login <profile>` — SSO login (reuses cached creds; confirms on prod).
 - `aws-status` / `gcp-status` / `gh-status` — per-service session checks.
 - `gcp-switch <config>` — manual gcloud config switch (Tab-completes).
-- `login-all` / `auth-status` — do/check everything at once.
-- `env-status` (alias `whereami`) — active context for this shell: ● active / ○ expired per service, plus the driving `.envrc` and resolved git identity.
+- `login-all` / `auth-status` — do / check everything at once.
+- `env-status` (alias `whereami`) — active context for this shell: **● active / ○ expired** per service, plus the driving `.envrc` and resolved git identity.
+- `my-commands` — the cheatsheet; extend it with a `my-commands-local` function in your local config.
 
-## What is NOT committed
+## What's committed vs local
 
-Identity values (emails, GPG key IDs), org-specific profiles, and `.envrc` files live outside the repo:
-- git identity → `~/.gitconfig*` (from the `.example` templates)
-- org profiles/aliases → `~/.config/switchboard/local.zsh` (from `local.zsh.example`)
-- per-directory cloud config → `.envrc` files (globally gitignored)
+The repo is generic and shareable. Anything identifying or machine-specific stays out of git:
 
-Keep it that way. The repo stays generic and shareable; secrets and machine specifics stay local.
+| Lives in the repo | Stays local (gitignored / outside repo) |
+|-------------------|------------------------------------------|
+| helper functions, installer, templates | `~/.gitconfig*` (your emails, GPG key IDs) |
+| `.envrc` / gitconfig / ssh **examples** | `~/.config/switchboard/local.zsh` (org profiles, `my-commands-local`) |
+| the model + docs | `~/.config/switchboard/toolset.zsh` (your chosen toolset) |
+| | `.envrc` files (globally gitignored) |
+
+## Layout
+
+```
+shell/
+  switchboard.zsh          entrypoint (sourced from ~/.zshrc)
+  cloud.zsh                aws-login, gcp-*, gh-*, auth-status, env-status/whereami
+  local.zsh.example        machine/org overrides + my-commands-local hook
+git/
+  gitconfig[.example], gitconfig-{personal,work}.example, gitignore_global
+direnv/
+  envrc.{personal,work,repo-override}.example
+ssh/
+  ssh-config.example       github.com-work / github.com-personal aliases
+install.sh                 interactive, idempotent, non-destructive bootstrap
+```
 
 ## One GitHub account, two aliases?
 
