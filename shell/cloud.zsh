@@ -24,10 +24,21 @@ function _aws_env_color() {
 # Time remaining on the most recent SSO cache token. NOTE: this is the newest
 # token across all cached SSO sessions, which may not be the current profile's
 # if you have several active. Treated as a rough indicator, not exact.
+# Convert an ISO-8601 timestamp to epoch seconds, portably (BSD date on macOS,
+# GNU date on Linux). Echoes nothing on failure.
+function _epoch_from_iso() {
+  local ts="$1"
+  # BSD date (macOS): -j -f <fmt>
+  date -j -f "%Y-%m-%dT%H:%M:%S" "${ts%%.*}" "+%s" 2>/dev/null && return
+  date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" "+%s" 2>/dev/null && return
+  # GNU date (Linux): -d <string>
+  date -d "$ts" "+%s" 2>/dev/null && return
+}
+
 function _aws_expiry() {
   local latest=$(find ~/.aws/sso/cache -name '*.json' -exec jq -r 'select(.startUrl and .expiresAt) | .expiresAt' {} \; 2>/dev/null | sort -r | head -1)
   if [ -n "$latest" ]; then
-    local exp_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${latest%%.*}" "+%s" 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$latest" "+%s" 2>/dev/null)
+    local exp_epoch=$(_epoch_from_iso "$latest")
     local now_epoch=$(date "+%s")
     if [ -n "$exp_epoch" ] && [ "$exp_epoch" -gt "$now_epoch" ]; then
       local diff=$(( (exp_epoch - now_epoch) / 60 ))
