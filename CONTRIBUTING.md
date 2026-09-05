@@ -31,3 +31,14 @@ brew install shellcheck             # optional; the hook skips lint if absent
 It leak-scans staged changes (AWS keys, private-key blocks, tokens,
 `api_key`/`token`/`password` assignments) and shellchecks `install.sh` /
 `uninstall.sh`. Bypass a false positive with `git commit --no-verify`.
+
+## Conventions (useful if you fork and modify)
+
+- **Keep it generic**: no personal emails, GPG key IDs, org names, account
+  numbers, or org-specific profiles in committed files — those belong in
+  `~/.config/switchboard/local.zsh` (see `local.zsh.example`).
+- **Shell**: helpers are zsh (`shell/*.zsh`); installers are bash and are
+  shellchecked. Prefer `printf` over `echo` for anything with escapes.
+- **Safety**: anything that writes to a user's dotfiles must back up first and
+  confirm before overwriting — follow the pattern in `install.sh`.
+- **Platform**: macOS + zsh + Homebrew; avoid hard dependencies outside that.
