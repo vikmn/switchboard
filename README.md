@@ -60,6 +60,28 @@ Then `source ~/.zshrc` and run `my-commands` / `whereami`.
 | `whereami` (`env-status`) | active context: ● active / ○ expired per service. `--fast` = offline, instant |
 | `my-commands` | the cheatsheet (extend via `my-commands-local`) |
 
+## Example output
+
+`whereami` — active context for the current shell (● green = active, ○ red = expired):
+
+```
+  ●  AWS      myorg-dev.Developer  ·  acct 123456789012  ·  6h 42m remaining
+  ○  GCP      work  ·  you@work.example  ·  proj my-project   · run: gcp-login
+  ●  GitHub   your-handle
+     git      you@work.example
+  📍 ~/code/myorg/service-a   🧭 ~/code/myorg/.envrc
+```
+
+`my-commands` — the cheatsheet (shows only your toolset; extend via `my-commands-local`):
+
+```
+📋 AWS:    aws-login <profile> · aws-status · aws-profiles
+☁️  GCP:    gcp-login · gcp-status · gcp-switch <config> (Tab)
+🐙 GitHub: gh-login · gh-status
+🔐 All:    login-all [aws-profile] · auth-status
+📍 Context: env-status / whereami   (● active / ○ expired, per shell)
+```
+
 ## Committed vs local
 
 Generic in the repo; identifying/machine-specific stays out of git:
