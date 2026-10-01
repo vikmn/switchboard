@@ -38,3 +38,17 @@
 #   echo "🔧 Personal:"
 #   echo "   my-tool <arg>   - what it does"
 # }
+
+# ── AI module: kiro login values (org/machine-specific) ──────────────────────
+# Used by `ai kiro login`. These identify your org's Identity Center, so they
+# are NOT committed. kiro-cli login is:
+#   kiro-cli login --license $KIRO_LICENSE --identity-provider $KIRO_IDENTITY_PROVIDER \
+#                  --region $KIRO_REGION --use-device-flow
+#
+# export KIRO_IDENTITY_PROVIDER="https://d-xxxxxxxxxx.awsapps.com/start"
+# export KIRO_REGION="eu-west-1"
+# export KIRO_LICENSE="pro"            # pro (Identity Center) or free (Builder ID)
+#
+# Where the agents repo lives (used by `ai kiro agent/agents` and the installer).
+# Defaults to ~/code/kiro-pit-crew/agents; override if yours is elsewhere.
+# export KIRO_AGENTS_HOME="$HOME/code/kiro-pit-crew/agents"

@@ -56,6 +56,7 @@ Then `source ~/.zshrc` and run `my-commands` / `whereami`.
 | `aws-login <profile>` | SSO login (reuses cached creds) |
 | `aws-status` / `gcp-status` / `gh-status` | per-service session check |
 | `gcp-switch <config>` | manual gcloud switch (Tab-completes) |
+| `ai kiro <action>` | AI ecosystem: `login` · `status` · `agents` · `agent <name>` (Tab). See [docs/ai-module.md](docs/ai-module.md) |
 | `login-all` / `auth-status` | do / check everything |
 | `whereami` (`env-status`) | active context: ● active / ○ expired per service. `--fast` = offline, instant |
 | `my-commands` | the cheatsheet (extend via `my-commands-local`) |
@@ -78,6 +79,7 @@ Then `source ~/.zshrc` and run `my-commands` / `whereami`.
 📋 AWS:    aws-login <profile> · aws-status · aws-profiles
 ☁️  GCP:    gcp-login · gcp-status · gcp-switch <config> (Tab)
 🐙 GitHub: gh-login · gh-status
+🤖 AI:     ai kiro login · ai kiro status · ai kiro agents · ai kiro agent <name> (Tab)
 🔐 All:    login-all [aws-profile] · auth-status
 📍 Context: env-status / whereami   (● active / ○ expired, per shell)
 ```
@@ -95,12 +97,22 @@ Generic in the repo; identifying/machine-specific stays out of git:
 ## Layout
 
 ```
-shell/      switchboard.zsh (loader) · lib/{aws,gcp,github,views}.zsh · local.zsh.example
+shell/      switchboard.zsh (loader) · lib/{aws,gcp,github,views,ai}.zsh · local.zsh.example
 git/        gitconfig[.example] + personal/work includes + gitignore_global
 direnv/     envrc.{personal,work,repo-override}.example
 ssh/        ssh-config.example
-install.sh · uninstall.sh · hooks/pre-commit · install/lib/{ui,pkg,migrate}.sh
+docs/       ai-module.md
+install.sh · uninstall.sh · hooks/pre-commit · install/lib/{ui,pkg,migrate,ai}.sh
 ```
+
+## AI ecosystem (kiro)
+
+Opt-in module that bootstraps an AI agent CLI on a new machine, parallel to the
+cloud auth setup. Detects `kiro-cli` (guides you to install it if missing, never
+auto-installs), templates the org SSO login values into `local.zsh`, and
+delegates agent install to the source repo's own setup. Commands are under the
+`ai kiro` dispatcher; `whereami` shows a kiro auth line. Full design in
+[docs/ai-module.md](docs/ai-module.md).
 
 ## Optional prod guard
 
