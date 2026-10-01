@@ -11,7 +11,7 @@ SWITCHBOARD_DIR="${SWITCHBOARD_DIR:-$HOME/code/switchboard}"
 autoload -Uz compinit && compinit -C 2>/dev/null
 
 # generic helpers — per-service libs, then the cross-service views that use them
-for _sb_lib in aws gcp github views; do
+for _sb_lib in aws gcp github views ai; do
   source "$SWITCHBOARD_DIR/shell/lib/$_sb_lib.zsh"
 done
 unset _sb_lib
@@ -31,13 +31,14 @@ fi
 # If SWITCHBOARD_TOOLS is unset (repo sourced without running install.sh),
 # it falls back to showing everything.
 function my-commands {
-  local tools="${SWITCHBOARD_TOOLS:-direnv gh aws gcloud gpg}"
+  local tools="${SWITCHBOARD_TOOLS:-direnv gh aws gcloud gpg kiro}"
   _sb_has() { [[ " $tools " == *" $1 "* ]]; }
   echo "🛠️  Switchboard commands:"
   echo ""
   _sb_has aws    && echo "📋 AWS:    aws-login <profile> · aws-status · aws-profiles"
   _sb_has gcloud && echo "☁️  GCP:    gcp-login · gcp-status · gcp-switch <config> (Tab)"
   _sb_has gh     && echo "🐙 GitHub: gh-login · gh-status"
+  _sb_has kiro   && echo "🤖 AI:     ai kiro login · ai kiro status · ai kiro agents · ai kiro agent <name> (Tab)"
   echo "🔐 All:    login-all [aws-profile] · auth-status"
   echo "📍 Context: env-status / whereami   (● active / ○ expired, per shell)"
   # personal/machine-specific commands can extend this list by defining

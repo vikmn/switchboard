@@ -58,6 +58,9 @@ function env-status {
     if [ -n "$ghuser" ]; then  printf "  %b  %-8s %s\n" "$ON"  "GitHub" "${ghuser}"
     else                       printf "  %b  %-8s %s\n" "$OFF" "GitHub" "${DIM}run: gh-login${X}"; fi
   fi
+  # optional extra service lines (e.g. the ai module adds a kiro line). The hook
+  # is passed "fast" when env-status ran in --fast mode so it can skip net calls.
+  typeset -f _sb_whereami_extra >/dev/null && _sb_whereami_extra "$fast"
   printf "  %s  %-8s %s\n" " " "git" "${gitid}"
   printf "${DIM}  📍 %s   🧭 %s${X}\n\n" "$(pwd | sed "s|$HOME|~|")" "${rc:-<none>}"
 }

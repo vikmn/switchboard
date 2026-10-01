@@ -59,7 +59,30 @@ else
   skip "no migrated blocks found"
 fi
 
-section "3. Config files left in place (remove manually if you want)"
+section "3. AI module (kiro) local config"
+localzsh="$HOME/.config/switchboard/local.zsh"
+if [ -f "$localzsh" ] && grep -q "AI module: kiro login values (added by install.sh" "$localzsh" 2>/dev/null; then
+  if ask "Remove the installer-added KIRO_* block from local.zsh?" y; then
+    backup "$localzsh"
+    # delete the installer-added header line and the commented lines after it,
+    # stopping at the first blank line (mirrors what install.sh appended).
+    awk '
+      /^# ── AI module: kiro login values \(added by install\.sh/ { drop=1; next }
+      drop && /^#/ { next }
+      drop && /^$/ { drop=0; next }
+      { print }
+    ' "$localzsh" > "$localzsh.tmp" && mv "$localzsh.tmp" "$localzsh"
+    ok "removed installer-added KIRO_* block (your own edits elsewhere are untouched)"
+  fi
+else
+  skip "no installer-added KIRO_* block in local.zsh"
+fi
+if [ -d "$HOME/.kiro/agents" ]; then
+  warn "kiro agents in ~/.kiro/agents are the source repo's install, left in place."
+  warn "  remove with: rm -rf ~/.kiro/agents"
+fi
+
+section "4. Config files left in place (remove manually if you want)"
 for f in "$HOME/.config/switchboard/local.zsh" "$HOME/.config/switchboard/toolset.zsh"; do
   [ -f "$f" ] && printf "  %s\n" "$f"
 done

@@ -19,6 +19,8 @@ source "$DIR/install/lib/ui.sh"
 source "$DIR/install/lib/migrate.sh"
 # shellcheck source=install/lib/pkg.sh
 source "$DIR/install/lib/pkg.sh"
+# shellcheck source=install/lib/ai.sh
+source "$DIR/install/lib/ai.sh"
 
 
 # _sb_ensure_key <name> <email> <current-key>
@@ -333,6 +335,9 @@ if [ -d "$DIR/.git" ] && [ -f "$DIR/hooks/pre-commit" ]; then
 else
   skip "not the switchboard git repo — contributor hook n/a"
 fi
+
+# ── 8. AI ecosystem (kiro) — opt-in ──────────────────────────────────────────
+ai_setup
 
 section "Done"
 # persist the agreed toolset so my-commands reflects what was set up
